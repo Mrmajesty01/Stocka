@@ -1,25 +1,30 @@
 package com.example.stocka.CustomerStockSearch
 
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.Divider
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.Text
 import androidx.compose.material.TextField
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBackIos
 import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.runtime.Composable
@@ -40,6 +45,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.stocka.Viemodel.AuthViewModel
 import com.example.stocka.main.CommonProgressSpinner
+import com.example.stocka.ui.theme.ListOfColors
 
 @Composable
 fun StockSearch(navController:NavController, viewModel:AuthViewModel){
@@ -71,9 +77,23 @@ fun StockSearch(navController:NavController, viewModel:AuthViewModel){
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 10.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
+
+                Icon(
+                    imageVector = Icons.Default.ArrowBackIos,
+                    contentDescription = "ArrowBack",
+                    modifier = Modifier
+                        .padding(start = 5.dp)
+                        .size(15.dp)
+                        .clickable {
+                            navController.popBackStack()
+                        },
+                    tint = ListOfColors.black
+                )
+
                 Text(
-                    text = "Stocks",
+                    text = "Select a stock",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center,
@@ -81,6 +101,10 @@ fun StockSearch(navController:NavController, viewModel:AuthViewModel){
 
                 )
             }
+
+            Divider(thickness = 1.dp, color = ListOfColors.lightGrey)
+
+            Spacer(modifier = Modifier.padding(10.dp))
 
             Column(
                 modifier = Modifier
@@ -95,6 +119,7 @@ fun StockSearch(navController:NavController, viewModel:AuthViewModel){
                     value = searchValue,
                     onValueChange = {
                         searchValue = it
+                        viewModel.customerSearch(searchValue)
                     },
                     label ={
                         Text(text = "Search for a stock")
@@ -145,8 +170,9 @@ fun StockSearch(navController:NavController, viewModel:AuthViewModel){
                         }
                     }
 
-
                 )
+
+                Spacer(modifier = Modifier.padding(5.dp))
 
                 Box(
                     modifier = Modifier

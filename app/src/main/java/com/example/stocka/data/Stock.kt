@@ -9,12 +9,14 @@ data class Stock(
     var stockName:String?=null,
     var stockPurchasePrice:String?=null,
     var stockSellingPrice:String?=null,
+    var stockTotalPrice:String?=null,
     var stockExpiryDate:String?=null,
     var stockQuantity:String?=null,
     var stockDateAdded:String?=null,
     var stockQuantitySold:String?=null
 ):Parcelable {
     constructor(parcel: Parcel) : this(
+        parcel.readString(),
         parcel.readString(),
         parcel.readString(),
         parcel.readString(),
@@ -33,6 +35,7 @@ data class Stock(
         parcel.writeString(stockName)
         parcel.writeString(stockPurchasePrice)
         parcel.writeString(stockSellingPrice)
+        parcel.writeString(stockTotalPrice)
         parcel.writeString(stockExpiryDate)
         parcel.writeString(stockQuantity)
         parcel.writeString(stockDateAdded)

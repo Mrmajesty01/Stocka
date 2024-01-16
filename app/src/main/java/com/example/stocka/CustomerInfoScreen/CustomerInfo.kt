@@ -2,7 +2,9 @@ package com.example.stocka.CustomerInfoScreen
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -16,15 +18,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.stocka.Navigation.Destination
 import com.example.stocka.Viemodel.AuthViewModel
-import com.example.stocka.data.Customer
 import com.example.stocka.ui.theme.ListOfColors
 
 @SuppressLint("UnusedMaterialScaffoldPaddingParameter")
 @Composable
 fun CustomerInfoScreen(
-    navController: NavController, viewModel: AuthViewModel, customer: Customer?
-){
+    navController: NavController, viewModel: AuthViewModel){
+    val customer = viewModel.customerSelected.value
     customer?.userId.let {
         Box(
             modifier = Modifier.fillMaxWidth()
@@ -47,7 +49,7 @@ fun CustomerInfoScreen(
                             .size(15.dp)
                             .align(Alignment.CenterStart)
                             .clickable {
-                                navController.popBackStack()
+                                navController.navigate(Destination.Customers.routes)
                             },
                         tint = ListOfColors.black
                     )
@@ -67,7 +69,11 @@ fun CustomerInfoScreen(
                         modifier = Modifier
                             .padding(end = 5.dp)
                             .size(15.dp)
-                            .align(Alignment.CenterEnd),
+                            .align(Alignment.CenterEnd)
+                            .clickable {
+                                viewModel.retrieveCustomerHistory(customer!!.customerId.toString())
+                                 navController.navigate(Destination.CustomerHistory.routes)
+                            },
                         tint = ListOfColors.black
                     )
                 }
@@ -159,25 +165,55 @@ fun CustomerInfoScreen(
 
                 Spacer(modifier = Modifier.padding(20.dp))
 
-                Button(
-                    onClick = {},
-                    shape = RoundedCornerShape(10.dp),
-                    modifier = Modifier
-                        .fillMaxWidth(0.7f)
-                        .height(50.dp)
+                Row(
+                    Modifier
+                        .horizontalScroll(rememberScrollState())
                         .align(Alignment.CenterHorizontally),
-                    colors = ButtonDefaults.buttonColors(ListOfColors.orange)
-
-
                 ) {
-                    Text(
-                        text = "Edit",
-                        color = ListOfColors.black
-                    )
+
+                    Button(
+                        onClick = {
+                            navController.navigate(Destination.MakeCredit.routes)
+                            viewModel.onCustomerSelected(customer!!)
+                        },
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(ListOfColors.orange),
+                        modifier = Modifier
+                            .width(120.dp)
+                            .height(50.dp)
+                    ) {
+                        Text(
+
+                            text = "Add Credit",
+                            textAlign = TextAlign.Center
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(20.dp))
+
+                    Button(
+                        onClick = {
+                                viewModel.getCustomer(customer!!)
+                                 navController.navigate(Destination.EditCustomer.routes)
+                        },
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier
+                            .fillMaxWidth(0.7f)
+                            .width(120.dp)
+                            .height(50.dp),
+                        colors = ButtonDefaults.buttonColors(ListOfColors.orange)
+
+
+                    ) {
+                        Text(
+                            text = "Edit",
+                            color = ListOfColors.black
+                        )
+                    }
+
                 }
 
                 Spacer(modifier = Modifier.padding(10.dp))
-
 
                 Button(
                     onClick = {},

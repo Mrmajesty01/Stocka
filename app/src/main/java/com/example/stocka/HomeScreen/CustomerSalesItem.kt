@@ -14,33 +14,40 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.stocka.data.Sales
+import java.text.SimpleDateFormat
+import java.util.Date
 
 @Composable
 fun CustomerSalesItem(
     sales: Sales,
     onClick:(Sales)-> Unit
-){
+) {
     Card(
         elevation = 5.dp,
         modifier = Modifier
             .fillMaxWidth()
             .height(120.dp)
             .clickable {
-               onClick.invoke(sales)
+                onClick.invoke(sales)
             },
         shape = RoundedCornerShape(15.dp)
 
     ) {
+        val formattedDate = sales?.salesDate?.let {
+            SimpleDateFormat("dd MMM yyyy").format(Date(it))
+        } ?: ""
         Box(
-            modifier = Modifier.padding(start = 6.dp, end = 6.dp, top= 5.dp, bottom = 5.dp)
+            modifier = Modifier.padding(start = 6.dp, end = 6.dp, top = 5.dp, bottom = 5.dp)
         ) {
 
-            Box(modifier = Modifier
-                .align(Alignment.TopStart)
-                .fillMaxWidth()
-                .height(40.dp)){
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .fillMaxWidth()
+                    .height(40.dp)
+            ) {
                 Text(
-                    text = "customer Name",
+                    text = "Customer Name",
                     modifier = Modifier.align(Alignment.TopStart)
                 )
                 Text(
@@ -62,14 +69,24 @@ fun CustomerSalesItem(
             }
 
 
-            Box(modifier = Modifier
-                .align(Alignment.CenterStart)
-                .fillMaxWidth()
-                .height(40.dp)){
-                Text(
-                    text = "Sales Invoice",
-                    modifier = Modifier.align(Alignment.TopStart)
-                )
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .fillMaxWidth()
+                    .height(40.dp)
+            ) {
+                if (sales.type == "SR") {
+                    Text(
+                        text = "Sales Invoice",
+                        modifier = Modifier.align(Alignment.TopStart)
+                    )
+                }
+                else {
+                    Text(
+                        text = "Credit Invoice",
+                        modifier = Modifier.align(Alignment.TopStart)
+                    )
+                }
 
                 Text(
                     text = "Invoice Date",
@@ -77,7 +94,7 @@ fun CustomerSalesItem(
                 )
 
                 Text(
-                    text = "20/12/2023",
+                    text = formattedDate,
                     fontWeight = FontWeight.Light,
                     modifier = Modifier.align(Alignment.BottomCenter)
                 )
@@ -88,23 +105,25 @@ fun CustomerSalesItem(
                 )
 
                 Text(
-                    text = sales.salesNo.toString(),
+                    text = sales.type.toString() + sales.salesNo.toString(),
                     fontWeight = FontWeight.Light,
                     modifier = Modifier.align(Alignment.BottomEnd)
                 )
             }
 
-            Box(modifier = Modifier
-                .align(Alignment.BottomStart)
-                .fillMaxWidth()
-                .height(40.dp)){
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .fillMaxWidth()
+                    .height(40.dp)
+            ) {
                 Text(
                     text = "Amount Payed",
                     modifier = Modifier.align(Alignment.TopStart)
                 )
 
                 Text(
-                    text = sales.totalPrice.toString(),
+                    text = sales.amountPaid.toString(),
                     fontWeight = FontWeight.Light,
                     modifier = Modifier.align(Alignment.BottomStart)
                 )
@@ -124,6 +143,7 @@ fun CustomerSalesItem(
         }
     }
 }
+
 
 //@Preview(showBackground = true)
 //@Composable

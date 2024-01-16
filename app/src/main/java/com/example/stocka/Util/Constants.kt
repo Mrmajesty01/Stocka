@@ -7,4 +7,5 @@ object Constants {
     const val COLLECTION_NAME_CUSTOMERS = "customers"
     const val COLLECTION_NAME_STOCKS = "stocks"
     const val COLLECTION_NAME_EXPENSE = "expenses"
+    const val COLLECTION_NAME_STOCKHISTORY = "stockHistory"
 }

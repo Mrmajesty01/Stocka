@@ -28,7 +28,7 @@ fun StockSearchItem(
             modifier = Modifier.fillMaxWidth()
                 .height(90.dp)
                 .clickable {
-                   onClick.invoke(stock)
+                    onClick.invoke(stock)
                 },
             shape = RoundedCornerShape(15.dp)
 
@@ -39,24 +39,27 @@ fun StockSearchItem(
                 Box(
                     modifier = Modifier.height(40.dp)
                         .fillMaxWidth()
-                        .padding(start = 6.dp, end = 6.dp)
                         .align(Alignment.TopStart)
                 ){
                     Text(
                         text ="Name",
-                        modifier = Modifier.align(Alignment.TopStart),
-                        fontWeight = FontWeight.Medium
-                    )
+                        modifier = Modifier.align(Alignment.TopStart)
+                            .padding(start = 6.dp),
+                        fontWeight = FontWeight.Medium,
+
+                        )
                     Text(
 
-                        text =" ${stock.stockName}",
+                        text =" ${stock.stockName?.trim()}",
                         modifier = Modifier.align(Alignment.BottomStart)
+                            .padding(start = 3.dp)
                     )
 
 
                     Text(
                         text = "Price",
-                        modifier = Modifier.align(Alignment.TopEnd),
+                        modifier = Modifier.align(Alignment.TopEnd)
+                            .padding(end = 6.dp),
                         fontWeight = FontWeight.Medium
                     )
 
@@ -64,19 +67,20 @@ fun StockSearchItem(
                     Text(
                         text = "${stock.stockSellingPrice}",
                         modifier = Modifier.align(Alignment.BottomEnd)
+                            .padding(end = 6.dp)
                     )
                 }
 
                 Box(
                     modifier = Modifier.height(40.dp)
                         .fillMaxWidth()
-                        .padding(start = 6.dp, end = 6.dp)
                         .align(Alignment.BottomStart)
                 ){
 
                     Text(
                         text = "Quantity Sold",
-                        modifier = Modifier.align(Alignment.TopStart),
+                        modifier = Modifier.align(Alignment.TopStart)
+                            .padding(start = 6.dp),
                         fontWeight = FontWeight.Medium
 
                     )
@@ -84,18 +88,21 @@ fun StockSearchItem(
                     Text(
                         text = "${stock.stockQuantitySold}",
                         modifier = Modifier.align(Alignment.BottomStart)
+                            .padding(start = 8.dp)
 
                     )
 
                     Text(
                         text = "Quantity Remaining",
-                        modifier = Modifier.align(Alignment.TopEnd),
+                        modifier = Modifier.align(Alignment.TopEnd)
+                            .padding(end = 6.dp),
                         fontWeight = FontWeight.Medium
                     )
 
                     Text(
                         text = "${stock.stockQuantity}",
                         modifier = Modifier.align(Alignment.BottomEnd)
+                            .padding(end = 6.dp)
                     )
 
                 }

@@ -9,6 +9,7 @@ data class Expense(
     val expenseName:String?=null,
     val expenseDescription:String?=null,
     val expenseCategory:String?=null,
+    val expenseDate:Long?=null,
     val expenseAmount:String?=null
 ):Parcelable {
     constructor(parcel: Parcel) : this(
@@ -17,6 +18,7 @@ data class Expense(
         parcel.readString(),
         parcel.readString(),
         parcel.readString(),
+        parcel.readValue(Long::class.java.classLoader) as? Long,
         parcel.readString()
     ) {
     }
@@ -27,6 +29,7 @@ data class Expense(
         parcel.writeString(expenseName)
         parcel.writeString(expenseDescription)
         parcel.writeString(expenseCategory)
+        parcel.writeValue(expenseDate)
         parcel.writeString(expenseAmount)
     }
 

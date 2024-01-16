@@ -1,10 +1,10 @@
 package com.example.stocka.EditSalesScreen
 
 import android.annotation.SuppressLint
-import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -20,20 +20,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.stocka.Navigation.Destination
 import com.example.stocka.Viemodel.AuthViewModel
-import com.example.stocka.data.SingleSale
 import com.example.stocka.main.navigateTo
 import com.example.stocka.ui.theme.ListOfColors
 
 
 @SuppressLint("UnusedMaterialScaffoldPaddingParameter")
 @Composable
-fun EditSalesScreen(navController: NavController, viewModel: AuthViewModel, singleSale: SingleSale?) {
+fun EditSalesScreen(navController: NavController, viewModel: AuthViewModel) {
 
     val focus = LocalFocusManager.current
     val context = LocalContext.current
@@ -42,6 +42,9 @@ fun EditSalesScreen(navController: NavController, viewModel: AuthViewModel, sing
     val stocks = viewModel.stocks.value
     val customers = viewModel.customerData.value
     val selected = viewModel.salesSelected.value
+
+    var single = viewModel.singleSaleSelected.value
+    var unmodified = viewModel.unmodifiedSingle.value
 
 
     var customerName by remember {
@@ -61,7 +64,7 @@ fun EditSalesScreen(navController: NavController, viewModel: AuthViewModel, sing
     }
 
     var quantity by remember {
-        mutableStateOf("1")
+        mutableStateOf("")
     }
 
     var editCustomerClickable by remember {
@@ -75,28 +78,11 @@ fun EditSalesScreen(navController: NavController, viewModel: AuthViewModel, sing
 
 
 
-    singleSale.let {
+    Box(modifier = Modifier.fillMaxSize()) {
 
-//        customerName = singleSale?.customerName.toString()
-//        productName = singleSale?.productName.toString()
-//        unitPrice = singleSale?.price.toString()
-//        quantity = singleSale?.quantity.toString()
-//        totalCost = singleSale?.totalPrice.toString()
-
-
-        if (singleSale?.customerName != null) {
-            customerName = singleSale.customerName.toString()
-            editCustomerClickable = true
-        }
-
-        if (singleSale?.productName != null) {
-            productName = singleSale.productName.toString()
-            unitPrice = singleSale.price.toString()
-            quantity = singleSale.quantity.toString()
-            totalCost = updateTotalCosts(unitPrice.toFloat(),quantity.toInt())
-            editStockClickable = true
-        }
-
+        quantity = unmodified?.quantity.toString()
+        totalCost = unmodified?.totalPrice.toString()
+        unitPrice = unmodified?.price.toString()
 
         Column(
             modifier = Modifier
@@ -119,6 +105,7 @@ fun EditSalesScreen(navController: NavController, viewModel: AuthViewModel, sing
                         .size(15.dp)
                         .clickable {
                             navController.popBackStack()
+                            viewModel.stockSelected.value = null
                         },
                     tint = ListOfColors.black
                 )
@@ -150,9 +137,10 @@ fun EditSalesScreen(navController: NavController, viewModel: AuthViewModel, sing
                 ) {
 
                     OutlinedTextField(
-                        value = customerName,
-                        onValueChange = {
-                            customerName = it
+                        value = viewModel.singleSaleSelected.value?.customerName.toString(),
+                        onValueChange = {newValue ->
+                            viewModel.singleSaleSelected.value = viewModel.singleSaleSelected.value?.copy(customerName = newValue)
+
                         },
                         label = {
                             Text(
@@ -160,9 +148,9 @@ fun EditSalesScreen(navController: NavController, viewModel: AuthViewModel, sing
                             )
                         },
                         modifier = Modifier.align(Alignment.Center),
-                        enabled = !editCustomerClickable,
+                        enabled = false
 
-                    )
+                        )
 
                 }
 
@@ -175,9 +163,9 @@ fun EditSalesScreen(navController: NavController, viewModel: AuthViewModel, sing
                 {
 
                     OutlinedTextField(
-                        value = productName,
-                        onValueChange = {
-                            productName = it
+                        value = viewModel.singleSaleSelected.value?.productName.toString(),
+                        onValueChange = {newValue->
+                            viewModel.singleSaleSelected.value = viewModel.singleSaleSelected.value?.copy(productName = newValue)
                         },
                         label = {
                             Text(
@@ -185,38 +173,20 @@ fun EditSalesScreen(navController: NavController, viewModel: AuthViewModel, sing
                             )
                         },
                         modifier = Modifier.align(Alignment.Center),
-                        enabled = !editStockClickable
-                    )
-
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "addIcon",
-                        modifier = Modifier
-                            .align(Alignment.CenterEnd)
-                            .clickable {
-                                if (stocks.isEmpty()) {
-                                    Toast
-                                        .makeText(
-                                            context,
-                                            "you have no stock in your stock's list, add one to select",
-                                            Toast.LENGTH_LONG
-                                        )
-                                        .show()
-                                } else {
-                                    navigateTo(navController, Destination.SearchStock)
-                                }
-                            }
+                        enabled = false
                     )
                 }
 
                 Spacer(modifier = Modifier.padding(10.dp))
 
                 OutlinedTextField(
-                    value = singleSale?.price.toString(),
+                    value = viewModel.singleSaleSelected.value?.price.toString(),
                     onValueChange =
-                    {
-                        unitPrice = it
-                        totalCost = updateTotalCosts(unitPrice.toFloat(), quantity.toInt())
+                    {newValue->
+                        viewModel.singleSaleSelected.value = viewModel.singleSaleSelected.value?.copy(price = newValue)
+                        viewModel.singleSaleSelected.value =
+                            viewModel.singleSaleSelected.value?.copy(totalPrice = updateTotalCost(viewModel.singleSaleSelected.value?.price!!.toFloat(), viewModel.singleSaleSelected.value?.quantity!!.toInt()))
+
                     },
                     label = {
                         Text(
@@ -224,7 +194,8 @@ fun EditSalesScreen(navController: NavController, viewModel: AuthViewModel, sing
                         )
                     },
                     modifier = Modifier.align(Alignment.CenterHorizontally),
-                    enabled = true
+                    enabled = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
                 )
 
                 Spacer(modifier = Modifier.padding(10.dp))
@@ -244,10 +215,12 @@ fun EditSalesScreen(navController: NavController, viewModel: AuthViewModel, sing
                         imageVector = Icons.Default.Remove,
                         contentDescription = "removeIcon",
                         modifier = Modifier.clickable {
-                            if (quantity.toInt() > 0) {
-                                var temp = quantity.toInt()
+                            if (viewModel.singleSaleSelected.value?.quantity!!.toInt() > 0) {
+                                var temp = viewModel.singleSaleSelected.value?.quantity!!.toInt()
                                 temp--
-                                quantity = temp.toString();
+                                viewModel.singleSaleSelected.value = viewModel.singleSaleSelected.value!!.copy(quantity = temp.toString())
+                                viewModel.singleSaleSelected.value =
+                                    viewModel.singleSaleSelected.value?.copy(totalPrice = updateTotalCost(viewModel.singleSaleSelected.value?.price!!.toFloat(), viewModel.singleSaleSelected.value?.quantity!!.toInt()))
                             }
                         }
                     )
@@ -256,15 +229,19 @@ fun EditSalesScreen(navController: NavController, viewModel: AuthViewModel, sing
                         modifier = Modifier
                             .width(100.dp)
                             .height(70.dp),
-                        value = quantity,
-                        onValueChange = {
-                            if (it.isNotEmpty()) {
-                                val newValue = it.toInt()
-                                quantity = if (newValue >= 0) newValue.toString() else "1"
-                                totalCost = updateTotalCosts(unitPrice.toFloat(), quantity.toInt())
+                        value = viewModel.singleSaleSelected.value?.quantity.toString(),
+                        onValueChange = {newQty->
+                            if (newQty.isNotEmpty()) {
+                                val newValue = newQty.toInt()
+                                viewModel.singleSaleSelected.value = viewModel.singleSaleSelected.value!!.copy(quantity =  if (newValue >= 0) newValue.toString() else "1")
+//                                viewModel.singleSaleSelected.value = viewModel.singleSaleSelected.value?.copy(quantity = newQty)
+                                viewModel.singleSaleSelected.value =
+                                    viewModel.singleSaleSelected.value?.copy(totalPrice = updateTotalCost(viewModel.singleSaleSelected.value?.price!!.toFloat(), viewModel.singleSaleSelected.value?.quantity!!.toInt()))
                             } else {
-                                quantity = "1"
-                                totalCost = updateTotalCosts(unitPrice.toFloat(), 1)
+                                val qty = "1"
+                                viewModel.singleSaleSelected.value = viewModel.singleSaleSelected.value?.copy(quantity = qty)
+                                viewModel.singleSaleSelected.value =
+                                    viewModel.singleSaleSelected.value?.copy(totalPrice = updateTotalCost(viewModel.singleSaleSelected.value?.price!!.toFloat(), viewModel.singleSaleSelected.value?.quantity!!.toInt()))
                             }
                         },
                         textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center),
@@ -273,16 +250,19 @@ fun EditSalesScreen(navController: NavController, viewModel: AuthViewModel, sing
                                 text = " Quantity"
                             )
                         },
-                        enabled = true
+                        enabled = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                     )
 
                     Icon(
                         imageVector = Icons.Default.Add,
                         contentDescription = "addIcon",
                         modifier = Modifier.clickable {
-                            var temp = quantity.toInt()
+                            var temp = viewModel.singleSaleSelected.value?.quantity!!.toInt()
                             temp++
-                            quantity = temp.toString()
+                            viewModel.singleSaleSelected.value = viewModel.singleSaleSelected.value!!.copy(quantity = temp.toString())
+                            viewModel.singleSaleSelected.value =
+                                viewModel.singleSaleSelected.value?.copy(totalPrice = updateTotalCost(viewModel.singleSaleSelected.value?.price!!.toFloat(), viewModel.singleSaleSelected.value?.quantity!!.toInt()))
                         }
                     )
 
@@ -291,9 +271,9 @@ fun EditSalesScreen(navController: NavController, viewModel: AuthViewModel, sing
                 Spacer(modifier = Modifier.padding(10.dp))
 
                 OutlinedTextField(
-                    value = totalCost,
-                    onValueChange = {
-                        totalCost = it
+                    value = viewModel.singleSaleSelected.value?.totalPrice.toString(),
+                    onValueChange = {newValue->
+                        viewModel.singleSaleSelected.value = viewModel.singleSaleSelected.value?.copy(totalPrice = newValue)
                     },
                     label = {
                         Text(
@@ -301,7 +281,8 @@ fun EditSalesScreen(navController: NavController, viewModel: AuthViewModel, sing
                         )
                     },
                     modifier = Modifier.align(Alignment.CenterHorizontally),
-                    enabled = true
+                    enabled = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
                 )
 
                 Spacer(modifier = Modifier.padding(20.dp))
@@ -309,12 +290,34 @@ fun EditSalesScreen(navController: NavController, viewModel: AuthViewModel, sing
 
                 Button(
                     onClick = {
-                          focus.clearFocus(force = true)
-                        if(singleSale !=null){
-                            val profit = (unitPrice.toInt()
+                        focus.clearFocus(force = true)
+                        if(single !=null){
+                            val profit = (single.price?.toInt()!!
                                 .minus(stockSelected?.stockPurchasePrice?.toInt()!!)).toString()
-                            viewModel.updateSale(customerName = customerName, stockName = productName,
-                                unitPrice = unitPrice, quantity = quantity, totalPrice = totalCost, profit = profit, selected?.salesId.toString(),singleSale.saleId.toString())
+                            viewModel.updateSale(customerName = single.customerName.toString(),
+                                customerId = selected?.customerId.toString(),
+                                stockName = single.productName.toString(),
+                                unitPrice = single.price.toString(), quantity = single.quantity.toString(),
+                                totalPrice = single.totalPrice.toString(), profit = profit,
+                                saleId = selected?.salesId.toString(),
+                                singleSaleId = single.saleId.toString(),
+                                stockId = stockSelected.stockId.toString(),
+                                saleDiff = (single.totalPrice?.toDouble()!! - totalCost.toDouble()).toString(),
+                                profitDiff = ((profit.toInt()*single.quantity!!.toInt()) - unmodified?.profit!!.toInt()).toString(),
+                                sale = selected!!,
+                                singleSale = single
+                            ){
+                                viewModel.unmodifiedSingle.value = null
+                                viewModel.singleSaleSelected.value = null
+                                viewModel.getSale(selected?.salesId.toString())
+                                if(selected.type=="SR"){
+                                     navigateTo(navController, Destination.SalesInfoHome)
+                                }
+                                else{
+                                    viewModel.onCustomerSelectedHome(selected.customerId.toString())
+                                    navigateTo(navController, Destination.CreditInfoHome)
+                                }
+                            }
                         }
                     },
                     shape = RoundedCornerShape(10.dp),
@@ -337,11 +340,11 @@ fun EditSalesScreen(navController: NavController, viewModel: AuthViewModel, sing
 
                 Button(
                     onClick = {
-                          focus.clearFocus(force = true)
-                        if(singleSale!=null) {
-                            viewModel.deleteSingleSale(selected?.salesId.toString(), singleSale.saleId.toString()){
+                        focus.clearFocus(force = true)
+                        if(single!=null) {
+                            viewModel.deleteSingleSale(selected?.salesId.toString(), single.saleId.toString()){
                                 viewModel.getSale(selected?.salesId.toString())
-                                navigateTo(navController,Destination.SalesInfoHome)
+                                navigateTo(navController, Destination.SalesInfoHome)
                             }
                         }
                     },
@@ -363,7 +366,7 @@ fun EditSalesScreen(navController: NavController, viewModel: AuthViewModel, sing
         }
     }
 }
-fun updateTotalCosts(cost: Float, count: Int): String {
+fun updateTotalCost(cost: Float, count: Int): String {
     return (cost * count).toString()
 }
 

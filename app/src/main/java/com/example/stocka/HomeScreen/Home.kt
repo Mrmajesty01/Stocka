@@ -329,14 +329,21 @@ fun HomeScreen(navController: NavController, viewModel: AuthViewModel) {
                                      ) {
                                          items(sales) {
                                              CustomerSalesItem(sales = it){
-                                                 viewModel.getSale(it.salesId.toString())
-                                                 navigateTo(navController,Destination.SalesInfoHome,NavPram("sales",it)
-                                                 )
+                                                 if(it.type.equals("SR")){
+                                                     viewModel.getSale(it.salesId.toString())
+                                                     navigateTo(navController,Destination.SalesInfoHome)
+                                                     viewModel.onCustomerSelectedHome(it.customerId.toString())
+                                                 }
+                                                 else {
+                                                     viewModel.getSale(it.salesId.toString())
+                                                     navigateTo(navController,Destination.CreditInfoHome)
+                                                     viewModel.onCustomerSelectedHome(it.customerId.toString())
+                                                 }
+                                                 }
                                              }
                                          }
                                      }
                                  }
-                             }
 
                             1->{
                                 if(expenses.isNullOrEmpty()) {

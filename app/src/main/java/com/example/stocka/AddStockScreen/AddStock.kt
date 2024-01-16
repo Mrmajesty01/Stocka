@@ -2,10 +2,12 @@ package com.example.stocka.AddStockScreen
 
 import android.annotation.SuppressLint
 import android.os.Build
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -16,19 +18,24 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.stocka.Navigation.Destination
 import com.example.stocka.Viemodel.AuthViewModel
+import com.example.stocka.main.navigateTo
 import com.example.stocka.ui.theme.ListOfColors
 import com.vanpra.composematerialdialogs.MaterialDialog
 import com.vanpra.composematerialdialogs.datetime.date.datepicker
 import com.vanpra.composematerialdialogs.rememberMaterialDialogState
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+
 
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -38,6 +45,7 @@ fun AddStockScreen(navController: NavController,viewModel: AuthViewModel){
 
 
     val dateDialogState = rememberMaterialDialogState()
+    val context = LocalContext.current
 
     var datePicked by remember{
         mutableStateOf(LocalDate.now())
@@ -161,7 +169,8 @@ fun AddStockScreen(navController: NavController,viewModel: AuthViewModel){
                         Text(
                             text = "Purchase Price"
                         )
-                    }
+                    },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
                 )
 
                 OutlinedTextField(
@@ -174,7 +183,8 @@ fun AddStockScreen(navController: NavController,viewModel: AuthViewModel){
                         Text(
                             text = "Selling Price"
                         )
-                    }
+                    },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
                 )
             }
 
@@ -224,7 +234,7 @@ fun AddStockScreen(navController: NavController,viewModel: AuthViewModel){
                         if (count.toInt() > 0) {
                             var temp = count.toInt()
                             temp--
-                            count = temp.toString() ;
+                            count = temp.toString()
                         }
                     }
                 )
@@ -242,7 +252,8 @@ fun AddStockScreen(navController: NavController,viewModel: AuthViewModel){
                         Text(
                             text =" Quantity"
                         )
-                    }
+                    },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
                 )
 
                 Icon(
@@ -262,14 +273,24 @@ fun AddStockScreen(navController: NavController,viewModel: AuthViewModel){
             Button(
                 onClick =  {
                     focus.clearFocus(force=true)
+                    if(sellingPrice.toDouble()<purchasePrice.toDouble()){
+                        Toast.makeText(context, "stock purchase price can't be greater than selling price", Toast.LENGTH_LONG).show()
+                        return@Button
+                    }
+                    if (!count.isInt()) {
+                        // Show a toast message indicating that the count is not an integer
+                        Toast.makeText(context, "invalid value for stock quantity", Toast.LENGTH_LONG).show()
+                        return@Button
+                    }
                     viewModel.createStock(
                         name = productName,
                         purchasePrice = purchasePrice,
                         sellingPrice = sellingPrice,
                         expiryDate = formatedDate.toString(),
-                        quantity = count
+                        quantity = count.toInt().toString()
                     ){
-                        navController.popBackStack()
+
+                        navigateTo(navController, Destination.Stocks)
                     }
                 },
                 shape = RoundedCornerShape(10.dp),
@@ -282,7 +303,7 @@ fun AddStockScreen(navController: NavController,viewModel: AuthViewModel){
 
             ){
                 Text(
-                    text = "Save",
+                    text = "Add",
                     color = ListOfColors.black
                 )
             }
@@ -294,6 +315,14 @@ fun AddStockScreen(navController: NavController,viewModel: AuthViewModel){
             CircularProgressIndicator()
         }
     }
+private fun String.isInt(): Boolean {
+    return try {
+        this.toInt()
+        true
+    } catch (e: NumberFormatException) {
+        false
+    }
+}
 
 
 

@@ -2,6 +2,7 @@ package com.example.stocka.SalesInfoScreen
 
 
 import android.annotation.SuppressLint
+import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -11,6 +12,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
+import androidx.compose.material.Divider
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
@@ -18,6 +20,7 @@ import androidx.compose.material.icons.filled.ArrowBackIos
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -26,21 +29,26 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.stocka.Navigation.Destination
 import com.example.stocka.Viemodel.AuthViewModel
-import com.example.stocka.data.Sales
 import com.example.stocka.main.navigateTo
 import com.example.stocka.ui.theme.ListOfColors
+import java.text.SimpleDateFormat
+import java.util.Date
 
 
 @SuppressLint("UnusedMaterialScaffoldPaddingParameter")
 @Composable
-fun SalesInfoHome(navController: NavController,viewModel:AuthViewModel, sales:Sales?) {
+fun SalesInfoHome(navController: NavController,viewModel:AuthViewModel) {
 
     val sale = viewModel.salesDetail.value
 
     val focus = LocalFocusManager.current
 
-    // it freezing the app if there is no sale document available in home
-    // meaning if you delete the last sale document
+    val context = LocalContext.current
+
+    val formattedDate = sale?.salesDate?.let {
+        SimpleDateFormat("dd MMM yyyy").format(Date(it))
+    } ?: ""
+
     if(sale?.sales.isNullOrEmpty()){
         navigateTo(navController,Destination.Home)
     }
@@ -84,13 +92,15 @@ fun SalesInfoHome(navController: NavController,viewModel:AuthViewModel, sales:Sa
 
                 }
 
-                Spacer(modifier = Modifier.padding(5.dp))
+                Divider(thickness = 1.dp, color = ListOfColors.lightGrey)
+
+                Spacer(modifier = Modifier.padding(15.dp))
 
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(50.dp)
-                        .padding(start = 10.dp, end = 10.dp)
+                        .height(75.dp)
+                        .padding(start = 3.dp, end = 3.dp)
                 ) {
 
 
@@ -105,6 +115,18 @@ fun SalesInfoHome(navController: NavController,viewModel:AuthViewModel, sales:Sa
                         modifier = Modifier.align(Alignment.TopEnd)
                     )
 
+
+                    Text(
+                        text = "Invoice Number",
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.align(Alignment.CenterStart)
+                    )
+
+                    Text(
+                        text = sale?.type.toString()+sale?.salesNo.toString(),
+                        modifier = Modifier.align(Alignment.CenterEnd)
+                    )
+
                     Text(
                         text = "Date",
                         fontWeight = FontWeight.Bold,
@@ -112,7 +134,7 @@ fun SalesInfoHome(navController: NavController,viewModel:AuthViewModel, sales:Sa
                     )
 
                     Text(
-                        text = sale?.salesDate.toString(),
+                        text = formattedDate,
                         modifier = Modifier.align(Alignment.BottomEnd)
                     )
 
@@ -162,8 +184,7 @@ fun SalesInfoHome(navController: NavController,viewModel:AuthViewModel, sales:Sa
                                 viewModel.getStockSelected(singleSale)
                                 viewModel.getSingleSale(singleSale,sale)
                             }
-//                            navigateTo(navController,Destination.EditSales, NavPram("sale",it))
-                            navigateTo(navController,Destination.EditSalesTrial)
+                            navController.navigate(Destination.EditSales.routes)
                         }
                     }
                 }
@@ -175,7 +196,7 @@ fun SalesInfoHome(navController: NavController,viewModel:AuthViewModel, sales:Sa
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(45.dp)
-                        .padding(start = 10.dp, end = 10.dp)
+                        .padding(start = 3.dp, end = 3.dp)
                 ) {
 
                     Text(
@@ -210,7 +231,18 @@ fun SalesInfoHome(navController: NavController,viewModel:AuthViewModel, sales:Sa
                         .align(Alignment.CenterHorizontally),
                 ) {
                     Button(
-                        onClick = {},
+                        onClick = {
+
+                            if (sale?.sales.isNullOrEmpty() || (sale?.sales?.size ?: 0) < 5) {
+                                viewModel.onSaleSelected(sale!!)
+                                viewModel.fromPage("home")
+                                navigateTo(navController,Destination.AddSale)
+                            }
+
+                            else{
+                                Toast.makeText(context,"Limit exceeded for adding sale",Toast.LENGTH_LONG).show()
+                            }
+                        },
                         shape = RoundedCornerShape(10.dp),
                         colors = ButtonDefaults.buttonColors(ListOfColors.orange),
                         modifier = Modifier
@@ -227,7 +259,10 @@ fun SalesInfoHome(navController: NavController,viewModel:AuthViewModel, sales:Sa
                     Spacer(modifier = Modifier.width(20.dp))
 
                     Button(
-                        onClick = {},
+                        onClick = {
+                            viewModel.onSaleSelected(sale!!)
+                            navController.navigate(Destination.SalesReceipt.routes)
+                        },
                         shape = RoundedCornerShape(10.dp),
                         colors = ButtonDefaults.buttonColors(ListOfColors.orange),
                         modifier = Modifier
@@ -247,7 +282,7 @@ fun SalesInfoHome(navController: NavController,viewModel:AuthViewModel, sales:Sa
                 Button(
                     onClick = {
                         focus.clearFocus(force = true)
-                        viewModel.deleteEntireDocument(salesId = sale?.salesId.toString()){
+                        viewModel.deleteEntireDocument(customerId = sale?.customerId.toString(),salesId = sale?.salesId.toString()){
                             navigateTo(navController,Destination.Home)
                         }
                     },

@@ -32,7 +32,6 @@ import com.example.stocka.Navigation.BottomNavMenu
 import com.example.stocka.Navigation.Destination
 import com.example.stocka.Viemodel.AuthViewModel
 import com.example.stocka.main.CommonProgressSpinner
-import com.example.stocka.main.NavPram
 import com.example.stocka.main.navigateTo
 
 
@@ -93,8 +92,9 @@ fun StockScreen(navController: NavController,viewModel: AuthViewModel) {
                     value = searchValue,
                     onValueChange = {
                         searchValue = it
+                        viewModel.stockSearchWhenTyping(searchValue)
                     },
-                    label ={
+                    label = {
                            Text(text = "Search for a stock")
                     },
                     modifier = Modifier
@@ -177,11 +177,8 @@ fun StockScreen(navController: NavController,viewModel: AuthViewModel) {
                             ) {
                                 items(stocks) { stock ->
                                     StockItem(stock = stock) { go ->
-                                        navigateTo(
-                                            navController,
-                                            Destination.StockInfo,
-                                            NavPram("stock", go)
-                                        )
+                                        navigateTo(navController, Destination.StockInfo)
+                                        viewModel.getStock(go)
                                     }
                                 }
                             }
@@ -196,7 +193,8 @@ fun StockScreen(navController: NavController,viewModel: AuthViewModel) {
                         ) {
                             items(searchedStock) { stock ->
                                 StockItem(stock = stock){go->
-                                    navigateTo(navController, Destination.StockInfo, NavPram("stock",go))
+                                    navigateTo(navController, Destination.StockInfo)
+                                    viewModel.getStock(go)
                                 }
                             }
                         }

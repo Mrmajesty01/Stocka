@@ -44,7 +44,6 @@ import com.example.stocka.Navigation.BottomNavMenu
 import com.example.stocka.Navigation.Destination
 import com.example.stocka.Viemodel.AuthViewModel
 import com.example.stocka.main.CommonProgressSpinner
-import com.example.stocka.main.NavPram
 import com.example.stocka.main.navigateTo
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -103,6 +102,7 @@ fun CustomersScreen(navController:NavController,viewModel: AuthViewModel){
                     value = searchValue,
                     onValueChange = {
                         searchValue = it
+                        viewModel.customerSearchWhenTyping(searchValue)
                     },
                     label ={
                         Text(text = "Search for a customer")
@@ -188,11 +188,8 @@ fun CustomersScreen(navController:NavController,viewModel: AuthViewModel){
                             ) {
                                 items(customers) {
                                     CustomerItem(customer = it) { go ->
-                                        navigateTo(
-                                            navController,
-                                            Destination.CustomerInfo,
-                                            NavPram("customer", go)
-                                        )
+                                        navigateTo(navController, Destination.CustomerInfo)
+                                        viewModel.getCustomer(go)
                                     }
                                 }
                             }
@@ -207,7 +204,8 @@ fun CustomersScreen(navController:NavController,viewModel: AuthViewModel){
                         ) {
                             items(searchedCustomer) {
                                 CustomerItem(customer = it){go->
-                                    navigateTo(navController, Destination.CustomerInfo, NavPram("customer",go))
+                                    navigateTo(navController, Destination.CustomerInfo)
+                                    viewModel.getCustomer(go)
                                 }
 
                             }

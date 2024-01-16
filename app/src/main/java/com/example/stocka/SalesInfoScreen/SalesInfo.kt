@@ -1,6 +1,7 @@
 package com.example.stocka.SalesInfoScreen
 
 import android.annotation.SuppressLint
+import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -10,6 +11,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
+import androidx.compose.material.Divider
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
@@ -17,6 +19,7 @@ import androidx.compose.material.icons.filled.ArrowBackIos
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -28,6 +31,8 @@ import com.example.stocka.Viemodel.AuthViewModel
 import com.example.stocka.main.NavPram
 import com.example.stocka.main.navigateTo
 import com.example.stocka.ui.theme.ListOfColors
+import java.text.SimpleDateFormat
+import java.util.Date
 
 
 @SuppressLint("UnusedMaterialScaffoldPaddingParameter")
@@ -38,6 +43,10 @@ fun SalesInfoScreen(navController: NavController,viewModel:AuthViewModel) {
     val salesLoading = viewModel.refreshSalesProgress.value
     val salesItem = viewModel.salesDetail.value
     val sales = viewModel.salesData.value
+    val context = LocalContext.current
+    val formattedDate = salesItem?.salesDate?.let {
+        SimpleDateFormat("dd MMM yyyy").format(Date(it))
+    } ?: ""
 
 
 
@@ -77,7 +86,10 @@ fun SalesInfoScreen(navController: NavController,viewModel:AuthViewModel) {
 
             }
 
-            Spacer(modifier = Modifier.padding(5.dp))
+            Divider(thickness = 1.dp, color = ListOfColors.lightGrey)
+
+            Spacer(modifier = Modifier.padding(15.dp))
+
 
             Column(
                 modifier = Modifier.fillMaxSize()
@@ -87,8 +99,8 @@ fun SalesInfoScreen(navController: NavController,viewModel:AuthViewModel) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(50.dp)
-                        .padding(start = 10.dp, end = 10.dp)
+                        .height(75.dp)
+                        .padding(start = 3.dp, end = 3.dp)
                 ) {
 
 
@@ -104,13 +116,24 @@ fun SalesInfoScreen(navController: NavController,viewModel:AuthViewModel) {
                     )
 
                     Text(
+                        text = "Invoice Number",
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.align(Alignment.CenterStart)
+                    )
+
+                    Text(
+                        text = salesItem?.type.toString()+salesItem?.salesNo.toString(),
+                        modifier = Modifier.align(Alignment.CenterEnd)
+                    )
+
+                    Text(
                         text = "Date",
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.align(Alignment.BottomStart)
                     )
 
                     Text(
-                        text = salesItem?.salesDate.toString(),
+                        text = formattedDate,
                         modifier = Modifier.align(Alignment.BottomEnd)
                     )
 
@@ -171,7 +194,7 @@ fun SalesInfoScreen(navController: NavController,viewModel:AuthViewModel) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(45.dp)
-                        .padding(start = 10.dp, end = 10.dp)
+                        .padding(start = 3.dp, end = 3.dp)
                 ) {
 
                     Text(
@@ -206,7 +229,17 @@ fun SalesInfoScreen(navController: NavController,viewModel:AuthViewModel) {
                         .align(Alignment.CenterHorizontally),
                 ) {
                     Button(
-                        onClick = {},
+                        onClick = {
+                            if (salesItem?.sales.isNullOrEmpty() || (salesItem?.sales?.size ?: 0) < 5) {
+                                viewModel.onSaleSelected(salesItem!!)
+                                viewModel.fromPage("notHome")
+                                navigateTo(navController,Destination.AddSale)
+                            }
+
+                            else{
+                                Toast.makeText(context,"Limit exceeded for adding sale", Toast.LENGTH_LONG).show()
+                            }
+                        },
                         shape = RoundedCornerShape(10.dp),
                         colors = ButtonDefaults.buttonColors(ListOfColors.orange),
                         modifier = Modifier
@@ -223,7 +256,10 @@ fun SalesInfoScreen(navController: NavController,viewModel:AuthViewModel) {
                     Spacer(modifier = Modifier.width(20.dp))
 
                     Button(
-                        onClick = {},
+                        onClick = {
+                            viewModel.onSaleSelected(salesItem!!)
+                            navController.navigate(Destination.SalesReceipt.routes)
+                        },
                         shape = RoundedCornerShape(10.dp),
                         colors = ButtonDefaults.buttonColors(ListOfColors.orange),
                         modifier = Modifier

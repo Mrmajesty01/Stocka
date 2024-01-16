@@ -55,7 +55,10 @@ fun SettingsScreen(navController:NavController,viewModel: AuthViewModel){
             ){
 
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth()
+                        .clickable {
+                               navController.navigate(Destination.PersonalDetail.routes)
+                        },
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(imageVector = Icons.Default.Person,
@@ -79,7 +82,10 @@ fun SettingsScreen(navController:NavController,viewModel: AuthViewModel){
                 Spacer(modifier = Modifier.padding(5.dp))
 
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth()
+                        .clickable {
+                               navController.navigate(Destination.BusinessDetails.routes)
+                        },
                     verticalAlignment = Alignment.CenterVertically
                 ) {
 
@@ -106,7 +112,10 @@ fun SettingsScreen(navController:NavController,viewModel: AuthViewModel){
 
 
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth()
+                        .clickable {
+                               navController.navigate(Destination.AccountSecurity.routes)
+                        },
                     verticalAlignment = Alignment.CenterVertically
                 ) {
 
@@ -204,7 +213,10 @@ fun SettingsScreen(navController:NavController,viewModel: AuthViewModel){
                 Spacer(modifier = Modifier.padding(5.dp))
 
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth()
+                        .clickable {
+                               navController.navigate(Destination.ContactUs.routes)
+                        },
                     verticalAlignment = Alignment.CenterVertically
                 ) {
 
