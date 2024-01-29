@@ -2,6 +2,7 @@ package com.example.stocka.MakeSalesScreen
 
 import android.annotation.SuppressLint
 import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -18,6 +19,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
@@ -54,7 +56,8 @@ fun AddSalesScreen(navController:NavController,viewModel: AuthViewModel) {
 
     val focus = LocalFocusManager.current
     val context = LocalContext.current
-    val isLoading = viewModel.refreshSalesProgress.value
+    val isLoading = viewModel.inProgress.value
+    val isLoadingStock = viewModel.onMultipleSoldProgress.value
     val userId = viewModel.userData.value
     val salesId = UUID.randomUUID()
     val customerSelected = viewModel.customerSelected.value
@@ -121,6 +124,16 @@ fun AddSalesScreen(navController:NavController,viewModel: AuthViewModel) {
 
 
     Box(modifier = Modifier.fillMaxSize()) {
+
+        if (isLoading || isLoadingStock) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.LightGray.copy(alpha = 0.5f))
+                    .clickable {}
+            )
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -140,9 +153,11 @@ fun AddSalesScreen(navController:NavController,viewModel: AuthViewModel) {
                         .padding(start = 5.dp)
                         .size(15.dp)
                         .clickable {
-                            navController.popBackStack()
-                            viewModel.stockSelected.value = null
-                            viewModel.customerSelected.value = null
+                            if(!isLoading || !isLoadingStock) {
+                                navController.popBackStack()
+                                viewModel.stockSelected.value = null
+                                viewModel.customerSelected.value = null
+                            }
                         },
                     tint = ListOfColors.black
                 )
@@ -218,16 +233,18 @@ fun AddSalesScreen(navController:NavController,viewModel: AuthViewModel) {
                         modifier = Modifier
                             .align(Alignment.CenterEnd)
                             .clickable {
-                                if (stocks.isEmpty()) {
-                                    Toast
-                                        .makeText(
-                                            context,
-                                            "you have no stock in your stock's list, add one to select",
-                                            Toast.LENGTH_LONG
-                                        )
-                                        .show()
-                                } else {
-                                    navigateTo(navController, Destination.SearchStock)
+                                if (!isLoading || !isLoadingStock) {
+                                    if (stocks.isEmpty()) {
+                                        Toast
+                                            .makeText(
+                                                context,
+                                                "you have no stock in your stock's list, add one to select",
+                                                Toast.LENGTH_LONG
+                                            )
+                                            .show()
+                                    } else {
+                                        navigateTo(navController, Destination.SearchStock)
+                                    }
                                 }
                             }
                     )
@@ -250,7 +267,8 @@ fun AddSalesScreen(navController:NavController,viewModel: AuthViewModel) {
                         )
                     },
                     modifier = Modifier.align(Alignment.CenterHorizontally),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    enabled = !isLoading || !isLoadingStock
                 )
 
                 Spacer(modifier = Modifier.padding(10.dp))
@@ -270,10 +288,12 @@ fun AddSalesScreen(navController:NavController,viewModel: AuthViewModel) {
                         imageVector = Icons.Default.Remove,
                         contentDescription = "removeIcon",
                         modifier = Modifier.clickable {
-                            if (quantity.toInt() > 0) {
-                                var temp = quantity.toInt()
-                                temp--
-                                quantity = temp.toString();
+                            if (!isLoading || !isLoadingStock) {
+                                if (quantity.toInt() > 0) {
+                                    var temp = quantity.toInt()
+                                    temp--
+                                    quantity = temp.toString();
+                                }
                             }
                         }
                     )
@@ -303,16 +323,19 @@ fun AddSalesScreen(navController:NavController,viewModel: AuthViewModel) {
                                 text = " Quantity"
                             )
                         },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        enabled = !isLoading || !isLoadingStock
                     )
 
                     Icon(
                         imageVector = Icons.Default.Add,
                         contentDescription = "addIcon",
                         modifier = Modifier.clickable {
-                            var temp = quantity.toInt()
-                            temp++
-                            quantity = temp.toString()
+                            if (!isLoading && !isLoadingStock) {
+                                var temp = quantity.toInt()
+                                temp++
+                                quantity = temp.toString()
+                            }
                         }
                     )
 
@@ -331,7 +354,8 @@ fun AddSalesScreen(navController:NavController,viewModel: AuthViewModel) {
                         )
                     },
                     modifier = Modifier.align(Alignment.CenterHorizontally),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    enabled = !isLoading || !isLoadingStock
                 )
 
                 Spacer(modifier = Modifier.padding(20.dp))
@@ -439,15 +463,22 @@ fun AddSalesScreen(navController:NavController,viewModel: AuthViewModel) {
 
                         focus.clearFocus(force = true)
 
+                        if(!isLoading || !isLoadingStock) {
+
                             if (stockToUpdate.any { it.first.stockName == productName }) {
-                                val existingStock = stockToUpdate.firstOrNull { it.first.stockName == productName }
+                                val existingStock =
+                                    stockToUpdate.firstOrNull { it.first.stockName == productName }
 
                                 existingStock?.let { (existingProduct, existingQuantity) ->
                                     val newTotalQuantity = existingQuantity + quantity.toInt()
 
                                     // Check if the new total quantity exceeds a certain limit
                                     if (newTotalQuantity > stockSelected?.stockQuantity?.toInt()!!) {
-                                        Toast.makeText(context,"The quantity selected in your add list with this quantity is greater than stock quantity available",Toast.LENGTH_LONG).show()
+                                        Toast.makeText(
+                                            context,
+                                            "The quantity selected in your add list with this quantity is greater than stock quantity available",
+                                            Toast.LENGTH_LONG
+                                        ).show()
                                         return@Button
                                     }
                                 }
@@ -456,20 +487,28 @@ fun AddSalesScreen(navController:NavController,viewModel: AuthViewModel) {
 
                             if (!quantity.isInt()) {
                                 // Show a toast message indicating that the count is not an integer
-                                Toast.makeText(context, "invalid value for stock quantity", Toast.LENGTH_LONG).show()
+                                Toast.makeText(
+                                    context,
+                                    "invalid value for stock quantity",
+                                    Toast.LENGTH_LONG
+                                ).show()
                                 return@Button
                             }
 
-                            if(customerName.isBlank()){
+                            if (customerName.isBlank()) {
                                 customerName = "Customer"
                                 return@Button
                             }
-                            if(stockSelected != null && stockSelected.stockQuantity?.toInt()!! < quantity.toInt()){
-                                Toast.makeText(context,"The quantity selected is greater than stock quantity available",Toast.LENGTH_LONG).show()
+                            if (stockSelected != null && stockSelected.stockQuantity?.toInt()!! < quantity.toInt()) {
+                                Toast.makeText(
+                                    context,
+                                    "The quantity selected is greater than stock quantity available",
+                                    Toast.LENGTH_LONG
+                                ).show()
                                 return@Button
                             }
 
-                            if (customerName.isEmpty() || (productName.isEmpty() && stockToUpdate.isEmpty()) || (cost.isEmpty()&& stockToUpdate.isEmpty()) || (totalCost.isEmpty()&& stockToUpdate.isEmpty())) {
+                            if (customerName.isEmpty() || (productName.isEmpty() && stockToUpdate.isEmpty()) || (cost.isEmpty() && stockToUpdate.isEmpty()) || (totalCost.isEmpty() && stockToUpdate.isEmpty())) {
                                 Toast.makeText(
                                     context,
                                     "Add a customer name and a product to make sales",
@@ -478,7 +517,7 @@ fun AddSalesScreen(navController:NavController,viewModel: AuthViewModel) {
                                 return@Button
                             }
 
-                            if(sales.isNotEmpty()){
+                            if (sales.isNotEmpty()) {
 
 
                                 if (stockSelected != null) {
@@ -499,10 +538,9 @@ fun AddSalesScreen(navController:NavController,viewModel: AuthViewModel) {
                                     sales.last().add(sale)
                                 }
 
-                                viewModel.onMultipleStocksSold(stockToUpdate)
                                 viewModel.onAddSale(
                                     customerName = customerName,
-                                    customerId = if(customerSelected?.customerId!=null) customerSelected.customerId.toString()
+                                    customerId = if (customerSelected?.customerId != null) customerSelected.customerId.toString()
                                     else UUID.randomUUID().toString(),
                                     sales = sales.flatMap { it.sales },
                                     totalPrice = sales.flatMap { it.sales }
@@ -510,23 +548,24 @@ fun AddSalesScreen(navController:NavController,viewModel: AuthViewModel) {
                                         .toString(),
                                     totalProfit = sales.flatMap { it.sales }
                                         .sumByDouble {
-                                            (it.profit?.toDoubleOrNull()?:0.0) * (it.quantity?.toDoubleOrNull()?:0.0)
+                                            (it.profit?.toDoubleOrNull()
+                                                ?: 0.0) * (it.quantity?.toDoubleOrNull() ?: 0.0)
                                         }
                                         .toString(),
                                     totalQuantity = sales.flatMap { it.sales }
                                         .sumByDouble { it.quantity?.toDoubleOrNull() ?: 0.0 }
                                         .toString(),
-                                    sale = selected!!
+                                    sale = selected!!,
+                                    stockQuantityList = stockToUpdate
                                 ) {
                                     viewModel.stockSelected.value = null
                                     viewModel.customerSelected.value = null
                                     sales = emptyList()
                                     stockToUpdate.clear()
 
-                                    if(fromPage=="home") {
+                                    if (fromPage == "home") {
                                         navigateTo(navController, Destination.SalesInfoHome)
-                                    }
-                                    else{
+                                    } else {
                                         viewModel.getSale(selected.salesId.toString())
                                         navigateTo(navController, Destination.SalesInfo)
                                     }
@@ -540,7 +579,6 @@ fun AddSalesScreen(navController:NavController,viewModel: AuthViewModel) {
                                     stockToUpdate.add(Pair(stockSelected, quantity.toInt()))
                                 }
 
-                                viewModel.onMultipleStocksSold(stockToUpdate)
 
                                 var profit = cost.toInt()
                                     ?.minus(stockSelected?.stockPurchasePrice?.toInt()!!)
@@ -564,7 +602,7 @@ fun AddSalesScreen(navController:NavController,viewModel: AuthViewModel) {
 
                                 viewModel.onAddSale(
                                     customerName = customerName,
-                                    customerId = if(customerSelected?.customerId!=null) customerSelected.customerId.toString()
+                                    customerId = if (customerSelected?.customerId != null) customerSelected.customerId.toString()
                                     else UUID.randomUUID().toString(),
                                     sales = sales.flatMap { it.sales },
                                     totalPrice = sales.flatMap { it.sales }
@@ -572,13 +610,15 @@ fun AddSalesScreen(navController:NavController,viewModel: AuthViewModel) {
                                         .toString(),
                                     totalProfit = sales.flatMap { it.sales }
                                         .sumByDouble {
-                                            (it.profit?.toDoubleOrNull()?:0.0) * (it.quantity?.toDoubleOrNull()?:0.0)
+                                            (it.profit?.toDoubleOrNull()
+                                                ?: 0.0) * (it.quantity?.toDoubleOrNull() ?: 0.0)
                                         }
                                         .toString(),
                                     totalQuantity = sales.flatMap { it.sales }
                                         .sumByDouble { it.quantity?.toDoubleOrNull() ?: 0.0 }
                                         .toString(),
-                                    sale = selected!!
+                                    sale = selected!!,
+                                    stockQuantityList = stockToUpdate
                                 ) {
 
 
@@ -587,16 +627,16 @@ fun AddSalesScreen(navController:NavController,viewModel: AuthViewModel) {
                                     viewModel.stockSelected.value = null
                                     viewModel.customerSelected.value = null
 
-                                    if(fromPage=="home") {
+                                    if (fromPage == "home") {
                                         navigateTo(navController, Destination.SalesInfoHome)
-                                    }
-                                    else{
+                                    } else {
                                         viewModel.getSale(selected.salesId.toString())
                                         navigateTo(navController, Destination.SalesInfo)
                                     }
                                 }
                             }
 
+                        }
                     },
                     shape = RoundedCornerShape(10.dp),
                     modifier = Modifier
@@ -614,8 +654,11 @@ fun AddSalesScreen(navController:NavController,viewModel: AuthViewModel) {
             }
 
         }
-        if (isLoading) {
-            CircularProgressIndicator()
+        if (isLoading || isLoadingStock) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(50.dp)
+                    .align(Alignment.Center)
+            )
         }
 
 

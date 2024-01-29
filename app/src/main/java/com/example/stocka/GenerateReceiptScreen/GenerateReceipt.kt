@@ -30,7 +30,7 @@ import java.util.Date
 
 @SuppressLint("UnusedMaterialScaffoldPaddingParameter")
 @Composable
-fun GenerateReceiptScreen(navController: NavController, viewModel: AuthViewModel){
+fun GenerateReceiptScreen(navController: NavController, viewModel: AuthViewModel) {
 
     val user = viewModel.userData.value
     val saleInfo = viewModel.salesSelected.value
@@ -49,9 +49,9 @@ fun GenerateReceiptScreen(navController: NavController, viewModel: AuthViewModel
                 .fillMaxWidth()
                 .padding(top = 10.dp),
             verticalAlignment = Alignment.CenterVertically
-        ){
+        ) {
 
-            Icon(imageVector = Icons.Default.ArrowBackIos ,
+            Icon(imageVector = Icons.Default.ArrowBackIos,
                 contentDescription = "ArrowIcon",
                 modifier = Modifier
                     .padding(start = 5.dp)
@@ -90,32 +90,64 @@ fun GenerateReceiptScreen(navController: NavController, viewModel: AuthViewModel
 
             Spacer(modifier = Modifier.padding(3.dp))
 
-            Text(
-                text = user.businessDescription.toString(),
-                fontSize = 15.sp,
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center
-            )
+            if (user.businessDescription != null) {
+                Text(
+                    text = user.businessDescription.toString(),
+                    fontSize = 15.sp,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center
+                )
 
-            Spacer(modifier = Modifier.padding(3.dp))
+                Spacer(modifier = Modifier.padding(3.dp))
+            }
 
-            Text(
-                text = "Address: ${user.businessAddress.toString()}",
-                fontSize = 15.sp,
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center
-            )
+            if (user.businessAddress != null) {
 
-            Spacer(modifier = Modifier.padding(3.dp))
+                Text(
+                    text = "Address: ${user.businessAddress.toString()}",
+                    fontSize = 15.sp,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center
+                )
 
-            Text(
-                text = "Mobile: ${user.number.toString()}, ${user.additionalNumber.toString()}",
-                fontSize = 15.sp,
-                modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center
-            )
+                Spacer(modifier = Modifier.padding(3.dp))
+            }
 
-            Spacer(modifier = Modifier.padding(5.dp))
+            if (user.number != null && user.additionalNumber != null) {
+
+                Text(
+                    text = "Mobile: ${user.number.toString()}, ${user.additionalNumber.toString()}",
+                    fontSize = 15.sp,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.padding(5.dp))
+            }
+
+            if (user.number == null && user.additionalNumber != null) {
+
+                Text(
+                    text = "Mobile: ${user.additionalNumber.toString()}",
+                    fontSize = 15.sp,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.padding(5.dp))
+            }
+
+            if (user.number != null && user.additionalNumber == null) {
+
+                Text(
+                    text = "Mobile: ${user.number.toString()}",
+                    fontSize = 15.sp,
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.padding(5.dp))
+            }
 
             Box(
                 modifier = Modifier
@@ -144,7 +176,7 @@ fun GenerateReceiptScreen(navController: NavController, viewModel: AuthViewModel
                 )
 
                 Text(
-                    text = "Invoice Number: ${saleInfo.type.toString()+saleInfo.salesNo.toString()}",
+                    text = "Invoice Number: ${saleInfo.salesNo.toString()}",
                     fontSize = 15.sp,
                     modifier = Modifier.align(Alignment.CenterEnd)
                 )
@@ -190,7 +222,7 @@ fun GenerateReceiptScreen(navController: NavController, viewModel: AuthViewModel
                 verticalArrangement = Arrangement.spacedBy(7.dp)
             ) {
                 items(saleInfo?.sales.orEmpty()) { singleSale ->
-                    SalesItemsDetails(sales = singleSale){}
+                    SalesItemsDetails(sales = singleSale, viewModel) {}
                 }
             }
 
@@ -246,8 +278,9 @@ fun GenerateReceiptScreen(navController: NavController, viewModel: AuthViewModel
 
         }
     }
-
 }
+
+
 
 
 

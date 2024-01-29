@@ -8,5 +8,8 @@ data class StockHistory(
     val stockSellingPrice:String?=null,
     val stockQuantityAdded:String?=null,
     val stockDateAdded: Long? =null,
-    val stockExpiryDate:String?=null
+    val stockExpiryDate:String?=null,
+    var stockOneMonthToExpire:String? =null,
+    var stockTwoWeeksToExpire:String? =null,
+    var stockOneWeekToExpire:String? =null
 )

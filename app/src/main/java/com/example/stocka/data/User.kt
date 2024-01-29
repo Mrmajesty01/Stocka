@@ -6,6 +6,7 @@ data class User(
     var businessName:String? = null,
     var email:String? = null,
     var password:String? = null,
+    var currentDate:Long? = null,
     var saleNo:String? = "0",
     var confirmPassword:String? = null,
     var totalSales:String? = null,
@@ -15,7 +16,8 @@ data class User(
     var additionalNumber:String? = null,
     var businessDescription:String? = null,
     var businessAddress:String? = null,
-    var businessEmailAddress:String? = null
+    var businessEmailAddress:String? = null,
+    var pin:String? = null
 
 ){
 
@@ -26,6 +28,7 @@ data class User(
         "email" to email,
         "saleNo" to saleNo,
         "password" to password,
+        "currentDate" to currentDate,
         "confirmPassword" to confirmPassword,
         "totalSales" to totalSales,
         "totalExpenses" to totalExpenses,
@@ -34,7 +37,8 @@ data class User(
         "additionalNumber" to additionalNumber,
         "businessDescription" to businessDescription,
         "businessAddress" to businessAddress,
-        "businessEmailAddress" to businessEmailAddress
+        "businessEmailAddress" to businessEmailAddress,
+        "pin" to pin
 
     )
 }

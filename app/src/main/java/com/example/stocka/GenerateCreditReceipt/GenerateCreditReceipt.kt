@@ -88,32 +88,63 @@ fun GenerateCreditReceiptScreen(navController:NavController, viewModel: AuthView
 
                 Spacer(modifier = Modifier.padding(3.dp))
 
-                Text(
-                    text = user.businessDescription.toString(),
-                    fontSize = 15.sp,
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center
-                )
+                if (user.businessDescription != null) {
+                    Text(
+                        text = user.businessDescription.toString(),
+                        fontSize = 15.sp,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center
+                    )
 
-                Spacer(modifier = Modifier.padding(3.dp))
+                    Spacer(modifier = Modifier.padding(3.dp))
+                }
 
-                Text(
-                    text = "Address: ${user.businessAddress.toString()}",
-                    fontSize = 15.sp,
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center
-                )
+                if (user.businessAddress != null) {
+                    Text(
+                        text = "Address: ${user.businessAddress.toString()}",
+                        fontSize = 15.sp,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center
+                    )
 
-                Spacer(modifier = Modifier.padding(3.dp))
+                    Spacer(modifier = Modifier.padding(3.dp))
+                }
 
-                Text(
-                    text = "Mobile: ${user.number.toString()}, ${user.additionalNumber.toString()}",
-                    fontSize = 15.sp,
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Center
-                )
+                if (user.number != null && user.additionalNumber != null) {
 
-                Spacer(modifier = Modifier.padding(5.dp))
+                    Text(
+                        text = "Mobile: ${user.number.toString()}, ${user.additionalNumber.toString()}",
+                        fontSize = 15.sp,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.padding(5.dp))
+                }
+
+                if (user.number == null && user.additionalNumber != null) {
+
+                    Text(
+                        text = "Mobile: ${user.additionalNumber.toString()}",
+                        fontSize = 15.sp,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.padding(5.dp))
+                }
+
+                if (user.number != null && user.additionalNumber == null) {
+
+                    Text(
+                        text = "Mobile: ${user.number.toString()}",
+                        fontSize = 15.sp,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center
+                    )
+
+                    Spacer(modifier = Modifier.padding(5.dp))
+                }
 
                 Box(
                     modifier = Modifier
@@ -142,7 +173,7 @@ fun GenerateCreditReceiptScreen(navController:NavController, viewModel: AuthView
                     )
 
                     Text(
-                        text = "Invoice Number: ${creditInfo.type.toString() + creditInfo.salesNo.toString()}",
+                        text = "Invoice Number: ${creditInfo.salesNo.toString()}",
                         fontSize = 15.sp,
                         modifier = Modifier.align(Alignment.CenterEnd)
                     )
@@ -188,7 +219,7 @@ fun GenerateCreditReceiptScreen(navController:NavController, viewModel: AuthView
                     verticalArrangement = Arrangement.spacedBy(7.dp)
                 ) {
                     items(creditInfo?.sales.orEmpty()) { singleSale ->
-                        SalesItemsDetails(sales = singleSale) {}
+                        SalesItemsDetails(sales = singleSale,viewModel) {}
                     }
                 }
 

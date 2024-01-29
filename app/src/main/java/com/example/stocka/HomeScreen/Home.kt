@@ -8,17 +8,21 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -37,21 +41,33 @@ import com.example.stocka.ui.theme.ListOfColors
 fun HomeScreen(navController: NavController, viewModel: AuthViewModel) {
 
 
-
     val userData = viewModel.userData.value
     val isLoading = viewModel.inProgress.value
     var sales = viewModel.salesHomeData.value
-    var expenses = viewModel.expenseData.value
-    val businessName = if(userData?.businessName==null) "" else userData.businessName
+    var expenses = viewModel.expenseHomeData.value
+    val businessName = if (userData?.businessName == null) "" else userData.businessName
 
-    var state by remember{
+
+    var state by remember {
         mutableStateOf(0)
     }
+
+
+
     Box(modifier = Modifier.fillMaxSize()) {
+
+        if (isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.LightGray.copy(alpha = 0.5f))
+                    .clickable {}
+            )
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
-
         ) {
 
             Row(
@@ -95,27 +111,15 @@ fun HomeScreen(navController: NavController, viewModel: AuthViewModel) {
 
                 Spacer(modifier = Modifier.padding(5.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
-                ) {
-
-                    Icon(
-                        imageVector = Icons.Default.FilterList,
-                        contentDescription = "FilterIcon",
-                        tint = ListOfColors.black
-                    )
-
-                }
-
-                Spacer(modifier = Modifier.padding(5.dp))
-
                 Card(
                     elevation = 16.dp,
                     modifier = Modifier
                         .padding(8.dp)
                         .height(150.dp)
                         .fillMaxWidth()
+                        .clickable {
+                            navController.navigate(Destination.DailyReport.routes)
+                        }
                         .align(Alignment.CenterHorizontally),
                     shape = RoundedCornerShape(15.dp)
                 ) {
@@ -129,8 +133,8 @@ fun HomeScreen(navController: NavController, viewModel: AuthViewModel) {
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
-                        when(state){
-                             0->{
+                        when (state) {
+                            0 -> {
                                 Text(
                                     text = "Total Sales Today",
                                     fontSize = 20.sp,
@@ -140,7 +144,8 @@ fun HomeScreen(navController: NavController, viewModel: AuthViewModel) {
                                 )
 
                             }
-                             1->{
+
+                            1 -> {
 
                                 Text(
                                     text = "Total Expenses Today",
@@ -151,7 +156,8 @@ fun HomeScreen(navController: NavController, viewModel: AuthViewModel) {
                                 )
 
                             }
-                            2->{
+
+                            2 -> {
 
                                 Text(
                                     text = "Total Profit Today",
@@ -166,11 +172,11 @@ fun HomeScreen(navController: NavController, viewModel: AuthViewModel) {
 
                         Spacer(modifier = Modifier.padding(5.dp))
 
-                        when(state){
+                        when (state) {
 
-                            0->{
+                            0 -> {
                                 Text(
-                                    text = "₦${userData?.totalSales?:0.0}",
+                                    text = "₦${userData?.totalSales ?: 0.0}",
                                     fontSize = 20.sp,
                                     fontWeight = FontWeight.ExtraBold,
                                     fontStyle = FontStyle.Italic,
@@ -179,9 +185,9 @@ fun HomeScreen(navController: NavController, viewModel: AuthViewModel) {
                                 )
                             }
 
-                            1->{
+                            1 -> {
                                 Text(
-                                    text = "₦${userData?.totalExpenses?:0.0}",
+                                    text = "₦${userData?.totalExpenses ?: 0.0}",
                                     fontSize = 20.sp,
                                     fontWeight = FontWeight.ExtraBold,
                                     fontStyle = FontStyle.Italic,
@@ -190,9 +196,9 @@ fun HomeScreen(navController: NavController, viewModel: AuthViewModel) {
                                 )
                             }
 
-                            2->{
+                            2 -> {
                                 Text(
-                                    text = "₦${userData?.totalProfit?:0.0}",
+                                    text = "₦${userData?.totalProfit ?: 0.0}",
                                     fontSize = 20.sp,
                                     fontWeight = FontWeight.ExtraBold,
                                     fontStyle = FontStyle.Italic,
@@ -218,7 +224,9 @@ fun HomeScreen(navController: NavController, viewModel: AuthViewModel) {
                 ) {
                     Button(
                         onClick = {
-                              state = 0
+                            if (!isLoading) {
+                                state = 0
+                            }
                         },
                         shape = RoundedCornerShape(10.dp),
                         colors = ButtonDefaults.buttonColors(ListOfColors.lightBlue),
@@ -233,11 +241,13 @@ fun HomeScreen(navController: NavController, viewModel: AuthViewModel) {
 
                     Button(
                         onClick = {
-                              state = 1
+                            if (!isLoading) {
+                                state = 1
+                            }
                         },
                         shape = RoundedCornerShape(10.dp),
                         colors = ButtonDefaults.buttonColors(ListOfColors.lightRed),
-                        modifier = Modifier.width(110.dp)
+                        modifier = Modifier.width(110.dp),
                     ) {
                         Text(
                             "Expenses"
@@ -248,7 +258,9 @@ fun HomeScreen(navController: NavController, viewModel: AuthViewModel) {
 
                     Button(
                         onClick = {
-                              state = 2
+                            if (!isLoading) {
+                                state = 2
+                            }
                         },
                         shape = RoundedCornerShape(10.dp),
                         colors = ButtonDefaults.buttonColors(ListOfColors.lightGreen),
@@ -265,40 +277,99 @@ fun HomeScreen(navController: NavController, viewModel: AuthViewModel) {
                 Column {
 
 
-                    when(state){
+                    when (state) {
 
-                        0->{
-                            Text(
-                                text = "Recent Sales",
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.fillMaxWidth(),
-                                textAlign = TextAlign.Start,
-                            )
+                        0 -> {
+                            Row(
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+
+                                Text(
+                                    text = "Recent Sales",
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    textAlign = TextAlign.Start,
+                                )
+
+                                Text(
+                                    text = buildAnnotatedString {
+                                        withStyle(style = SpanStyle(textDecoration = TextDecoration.Underline)) {
+                                            append("View All")
+                                        }
+                                    },
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clickable {
+                                            navController.navigate(Destination.Invoices.routes)
+                                        },
+                                    textAlign = TextAlign.End,
+                                )
+                            }
                         }
 
-                        1->{
-                            Text(
-                                text = "Recent Expense",
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.fillMaxWidth(),
-                                textAlign = TextAlign.Start,
-                            )
+                        1 -> {
+                            Row(
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = "Recent Expense",
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    textAlign = TextAlign.Start,
+                                )
+
+                                Text(
+                                    text = buildAnnotatedString {
+                                        withStyle(style = SpanStyle(textDecoration = TextDecoration.Underline)) {
+                                            append("View All")
+                                        }
+                                    },
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clickable {
+                                            navController.navigate(Destination.ExpenseScreen.routes)
+                                        },
+                                    textAlign = TextAlign.End,
+                                )
+                            }
                         }
 
-                        2->{
-                            Text(
-                                text = "Recent Sales",
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.fillMaxWidth(),
-                                textAlign = TextAlign.Start,
-                            )
+                        2 -> {
+                            Row(
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = "Recent Sales",
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    textAlign = TextAlign.Start,
+                                )
 
+                                Text(
+                                    text = buildAnnotatedString {
+                                        withStyle(style = SpanStyle(textDecoration = TextDecoration.Underline)) {
+                                            append("View All")
+                                        }
+                                    },
+                                    fontSize = 20.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clickable {
+                                            navController.navigate(Destination.Invoices.routes)
+                                        },
+                                    textAlign = TextAlign.End,
+                                )
+
+                            }
                         }
 
                     }
+
 
                     Spacer(modifier = Modifier.padding(7.dp))
 
@@ -307,75 +378,8 @@ fun HomeScreen(navController: NavController, viewModel: AuthViewModel) {
                             .weight(1f)
                             .fillMaxWidth()
                     ) {
-                        when(state){
-                             0-> {
-                                 if (sales.isEmpty()) {
-                                     Column(
-                                         modifier = Modifier.fillMaxWidth()
-                                             .fillMaxSize(),
-                                         verticalArrangement = Arrangement.Center,
-                                         horizontalAlignment = Alignment.CenterHorizontally
-                                     ) {
-                                         Text(
-                                             text = "No sales added today"
-                                         )
-                                     }
-                                 } else {
-                                     LazyColumn(
-                                         modifier = Modifier
-                                             .wrapContentHeight()
-                                             .fillMaxSize(),
-                                         verticalArrangement = Arrangement.spacedBy(7.dp)
-                                     ) {
-                                         items(sales) {
-                                             CustomerSalesItem(sales = it){
-                                                 if(it.type.equals("SR")){
-                                                     viewModel.getSale(it.salesId.toString())
-                                                     navigateTo(navController,Destination.SalesInfoHome)
-                                                     viewModel.onCustomerSelectedHome(it.customerId.toString())
-                                                 }
-                                                 else {
-                                                     viewModel.getSale(it.salesId.toString())
-                                                     navigateTo(navController,Destination.CreditInfoHome)
-                                                     viewModel.onCustomerSelectedHome(it.customerId.toString())
-                                                 }
-                                                 }
-                                             }
-                                         }
-                                     }
-                                 }
-
-                            1->{
-                                if(expenses.isNullOrEmpty()) {
-                                    Column (
-                                        modifier = Modifier.fillMaxWidth()
-                                            .fillMaxSize(),
-                                        verticalArrangement = Arrangement.Center,
-                                        horizontalAlignment = Alignment.CenterHorizontally
-                                    ){
-                                        Text(
-                                            text = "No expenses added today"
-                                        )
-                                    }
-                                }
-                                else{
-                                    LazyColumn(
-                                        modifier = Modifier
-                                            .wrapContentHeight()
-                                            .fillMaxSize(),
-                                        verticalArrangement = Arrangement.spacedBy(7.dp)
-                                    ) {
-                                        items(expenses) { expense ->
-                                            ExpenseItem(expense = expense){
-                                                navigateTo(navController,Destination.ExpenseInfo,
-                                                    NavPram("expense",it))
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                            2->{
+                        when (state) {
+                            0 -> {
                                 if (sales.isEmpty()) {
                                     Column(
                                         modifier = Modifier.fillMaxWidth()
@@ -395,8 +399,83 @@ fun HomeScreen(navController: NavController, viewModel: AuthViewModel) {
                                         verticalArrangement = Arrangement.spacedBy(7.dp)
                                     ) {
                                         items(sales) {
-                                            CustomerSalesItem(sales = it){
-                                                navigateTo(navController,Destination.SalesInfoHome,NavPram("sales",it))
+                                            CustomerSalesItem(sales = it) {
+                                                if (it.type.equals("SR")) {
+                                                    viewModel.getSale(it.salesId.toString())
+                                                    navigateTo(
+                                                        navController,
+                                                        Destination.SalesInfoHome
+                                                    )
+                                                    viewModel.onCustomerSelectedHome(it.customerId.toString())
+                                                } else {
+                                                    viewModel.getSale(it.salesId.toString())
+                                                    navigateTo(
+                                                        navController,
+                                                        Destination.CreditInfoHome
+                                                    )
+                                                    viewModel.onCustomerSelectedHome(it.customerId.toString())
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            1 -> {
+                                if (expenses.isNullOrEmpty()) {
+                                    Column(
+                                        modifier = Modifier.fillMaxWidth()
+                                            .fillMaxSize(),
+                                        verticalArrangement = Arrangement.Center,
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Text(
+                                            text = "No expenses added today"
+                                        )
+                                    }
+                                } else {
+                                    LazyColumn(
+                                        modifier = Modifier
+                                            .wrapContentHeight()
+                                            .fillMaxSize(),
+                                        verticalArrangement = Arrangement.spacedBy(7.dp)
+                                    ) {
+                                        items(expenses) { expense ->
+                                            ExpenseItem(expense = expense) {
+                                                viewModel.getExpense(it)
+                                                navigateTo(navController, Destination.ExpenseInfo)
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            2 -> {
+                                if (sales.isEmpty()) {
+                                    Column(
+                                        modifier = Modifier.fillMaxWidth()
+                                            .fillMaxSize(),
+                                        verticalArrangement = Arrangement.Center,
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Text(
+                                            text = "No sales added today"
+                                        )
+                                    }
+                                } else {
+                                    LazyColumn(
+                                        modifier = Modifier
+                                            .wrapContentHeight()
+                                            .fillMaxSize(),
+                                        verticalArrangement = Arrangement.spacedBy(7.dp)
+                                    ) {
+                                        items(sales) {
+                                            CustomerSalesItem(sales = it) {
+                                                navigateTo(
+                                                    navController,
+                                                    Destination.SalesInfoHome,
+                                                    NavPram("sales", it)
+                                                )
                                             }
                                         }
                                     }
@@ -410,17 +489,19 @@ fun HomeScreen(navController: NavController, viewModel: AuthViewModel) {
 
                 }
             }
-            BottomNavMenu(selectedItem = BottomNavItem.Home, navController = navController )
+            if (!isLoading) {
+                BottomNavMenu(selectedItem = BottomNavItem.Home, navController = navController)
+            }
         }
 
-        if(isLoading){
+        if (isLoading) {
             CircularProgressIndicator(
                 modifier = Modifier.size(50.dp)
                     .align(Alignment.Center)
             )
         }
-        }
     }
+}
 
 
 

@@ -3,6 +3,7 @@ package com.example.stocka.SalesInfoScreen
 
 import android.annotation.SuppressLint
 import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -10,16 +11,24 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.AlertDialog
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
+import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Divider
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
+import androidx.compose.material.TextButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIos
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
@@ -43,6 +52,12 @@ fun SalesInfoHome(navController: NavController,viewModel:AuthViewModel) {
 
     val focus = LocalFocusManager.current
 
+    val isLoadingDelete = viewModel.deleteSaleProgress.value
+
+    val isLoading = viewModel.getSaleProgress.value
+
+    val isLoadingCustomer = viewModel.customerProgress.value
+
     val context = LocalContext.current
 
     val formattedDate = sale?.salesDate?.let {
@@ -53,11 +68,61 @@ fun SalesInfoHome(navController: NavController,viewModel:AuthViewModel) {
         navigateTo(navController,Destination.Home)
     }
 
+    var openDialog by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    if(openDialog){
+        AlertDialog(
+            onDismissRequest = { openDialog = false },
+
+            title = {
+                Text(text = "Delete Sale")
+            },
+
+            text = {
+                Text(text = "Are you sure you want to delete sale ?")
+            },
+
+            confirmButton = {
+                TextButton(onClick = {
+                    openDialog = false
+                    viewModel.deleteEntireDocument(
+                        customerId = sale?.customerId.toString(),
+                        salesId = sale?.salesId.toString()
+                    ) {
+                        navigateTo(navController, Destination.Home)
+                    }
+                }) {
+                    Text(text = "Yes")
+                }
+            },
+
+            dismissButton = {
+                TextButton(onClick = {
+                    openDialog = false
+                }) {
+                    Text(text = "No")
+                }
+            },
+        )
+    }
+
 
     sale?.userId.let {
         Box(
             modifier = Modifier.fillMaxSize()
         ) {
+
+            if (isLoading || isLoadingCustomer ||isLoadingDelete) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.LightGray.copy(alpha = 0.5f))
+                        .clickable {}
+                )
+            }
+
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -77,7 +142,9 @@ fun SalesInfoHome(navController: NavController,viewModel:AuthViewModel) {
                             .padding(start = 5.dp)
                             .size(15.dp)
                             .clickable {
-                                navController.popBackStack()
+                                if(!isLoading || !isLoadingCustomer || !isLoadingDelete) {
+                                    navController.popBackStack()
+                                }
                             },
                         tint = ListOfColors.black
                     )
@@ -123,7 +190,7 @@ fun SalesInfoHome(navController: NavController,viewModel:AuthViewModel) {
                     )
 
                     Text(
-                        text = sale?.type.toString()+sale?.salesNo.toString(),
+                        text = sale?.salesNo.toString(),
                         modifier = Modifier.align(Alignment.CenterEnd)
                     )
 
@@ -174,17 +241,21 @@ fun SalesInfoHome(navController: NavController,viewModel:AuthViewModel) {
 
 
                 LazyColumn(
-                    modifier = Modifier.wrapContentHeight(),
-                    verticalArrangement = Arrangement.spacedBy(7.dp)
+                    modifier = Modifier.wrapContentHeight()
+                        .background(if (isLoading || isLoadingCustomer || isLoadingDelete) ListOfColors.lightGrey else Color.Transparent),
+                    verticalArrangement = Arrangement.spacedBy(7.dp),
                 ) {
                     items(sale?.sales.orEmpty()) { singleSale ->
-                        SalesItemsDetails(sales = singleSale){
-                            if (sale != null) {
-                                viewModel.onSaleSelected(sale)
-                                viewModel.getStockSelected(singleSale)
-                                viewModel.getSingleSale(singleSale,sale)
+                        SalesItemsDetails(sales = singleSale,viewModel) {
+                            if (!isLoading || !isLoadingCustomer || !isLoadingDelete) {
+                                if (sale != null) {
+                                    viewModel.onSaleSelected(sale)
+                                    viewModel.fromPage("saleInfoHome")
+                                    viewModel.getStockSelected(singleSale)
+                                    viewModel.getSingleSale(singleSale, sale)
+                                }
+                                navController.navigate(Destination.EditSales.routes)
                             }
-                            navController.navigate(Destination.EditSales.routes)
                         }
                     }
                 }
@@ -232,15 +303,18 @@ fun SalesInfoHome(navController: NavController,viewModel:AuthViewModel) {
                 ) {
                     Button(
                         onClick = {
-
-                            if (sale?.sales.isNullOrEmpty() || (sale?.sales?.size ?: 0) < 5) {
-                                viewModel.onSaleSelected(sale!!)
-                                viewModel.fromPage("home")
-                                navigateTo(navController,Destination.AddSale)
-                            }
-
-                            else{
-                                Toast.makeText(context,"Limit exceeded for adding sale",Toast.LENGTH_LONG).show()
+                            if(!isLoading || !isLoadingCustomer || !isLoadingDelete) {
+                                if (sale?.sales.isNullOrEmpty() || (sale?.sales?.size ?: 0) < 5) {
+                                    viewModel.onSaleSelected(sale!!)
+                                    viewModel.fromPage("home")
+                                    navigateTo(navController, Destination.AddSale)
+                                } else {
+                                    Toast.makeText(
+                                        context,
+                                        "Limit exceeded for adding sale",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
                             }
                         },
                         shape = RoundedCornerShape(10.dp),
@@ -260,8 +334,10 @@ fun SalesInfoHome(navController: NavController,viewModel:AuthViewModel) {
 
                     Button(
                         onClick = {
-                            viewModel.onSaleSelected(sale!!)
-                            navController.navigate(Destination.SalesReceipt.routes)
+                            if(!isLoading || !isLoadingCustomer || !isLoadingDelete) {
+                                viewModel.onSaleSelected(sale!!)
+                                navController.navigate(Destination.SalesReceipt.routes)
+                            }
                         },
                         shape = RoundedCornerShape(10.dp),
                         colors = ButtonDefaults.buttonColors(ListOfColors.orange),
@@ -281,9 +357,9 @@ fun SalesInfoHome(navController: NavController,viewModel:AuthViewModel) {
 
                 Button(
                     onClick = {
-                        focus.clearFocus(force = true)
-                        viewModel.deleteEntireDocument(customerId = sale?.customerId.toString(),salesId = sale?.salesId.toString()){
-                            navigateTo(navController,Destination.Home)
+                        if(!isLoading || !isLoadingCustomer || !isLoadingDelete) {
+                            focus.clearFocus(force = true)
+                            openDialog = true
                         }
                     },
                     shape = RoundedCornerShape(10.dp),
@@ -302,6 +378,12 @@ fun SalesInfoHome(navController: NavController,viewModel:AuthViewModel) {
 
             }
 
+            if(isLoading || isLoadingCustomer || isLoadingDelete){
+                CircularProgressIndicator(
+                    modifier = Modifier.size(50.dp)
+                        .align(Alignment.Center)
+                )
+            }
 
         }
     }

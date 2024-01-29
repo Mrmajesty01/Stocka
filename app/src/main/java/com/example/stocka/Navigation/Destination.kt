@@ -40,5 +40,8 @@ sealed class Destination(val routes:String){
     object EditBusinessDetail:Destination("editBusinessDetails")
     object SalesReceipt:Destination("salesReceipt")
     object CreditReceipt:Destination("creditReceipt")
+    object ExpenseScreen: Destination("expenseScreen")
+    object DailyReport: Destination("dailyReport")
+    object EditExpense:Destination("editExpense")
 
 }

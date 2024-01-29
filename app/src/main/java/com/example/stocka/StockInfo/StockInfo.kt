@@ -1,17 +1,25 @@
 package com.example.stocka.StockInfo
 
 import android.annotation.SuppressLint
+import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIos
 import androidx.compose.material.icons.filled.History
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -25,12 +33,134 @@ import com.example.stocka.ui.theme.ListOfColors
 fun StockInfoScreen(
     navController: NavController, viewModel: AuthViewModel){
 
-    val stock = viewModel.stockSelected.value
+        val isLoading = viewModel.getStockProgress.value
+        val stock = viewModel.stockSelected.value
+        val isLoadingDelete = viewModel.deleteStockProgress.value
+        val userData = viewModel.userData.value
+        var openDialog by rememberSaveable {
+            mutableStateOf(false)
+        }
+        var openDialogEdit by rememberSaveable {
+            mutableStateOf(false)
+        }
+        var pin by remember { mutableStateOf(TextFieldValue()) }
+        val context = LocalContext.current
 
-    stock?.userId.let {
+
+    if(openDialogEdit){
+        AlertDialog(
+            onDismissRequest = { openDialogEdit = false },
+
+            title = {
+                Text(text = "Edit Stock")
+            },
+
+            text = {
+                Column {
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Add an EditText for PIN input
+                    OutlinedTextField(
+                        value = pin,
+                        onValueChange = {
+                            pin = it
+                        },
+                        label = { Text("Enter PIN TO EDIT") },
+                        keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.NumberPassword),
+                    )
+                }
+            },
+
+            confirmButton = {
+                TextButton(onClick = {
+                    if(pin.text.toInt() == userData?.pin?.toInt()) {
+                        openDialogEdit = false
+                        viewModel.getStock(stock!!)
+                        navController.navigate(Destination.EditStock.routes)
+                    }
+                    else{
+                        Toast.makeText(context, "wrong pin try again", Toast.LENGTH_LONG).show()
+                    }
+                }) {
+                    Text(text = "Yes")
+                }
+            },
+
+            dismissButton = {
+                TextButton(onClick = {
+                    openDialogEdit = false
+                }) {
+                    Text(text = "No")
+                }
+            },
+        )
+    }
+
+        if(openDialog){
+            AlertDialog(
+                onDismissRequest = { openDialog = false },
+
+                title = {
+                    Text(text = "Delete Stock")
+                },
+
+                text = {
+                    Column {
+                    Text(text = "Are you sure you want to delete ${stock!!.stockName} from stocks ?")
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Add an EditText for PIN input
+                    OutlinedTextField(
+                        value = pin,
+                        onValueChange = {
+                            pin = it
+                        },
+                        label = { Text("Enter PIN TO DELETE") },
+                        keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.NumberPassword),
+                    )
+                }
+                },
+
+                confirmButton = {
+                    TextButton(onClick = {
+                        if(pin.text.toInt() == userData?.pin?.toInt()) {
+                            openDialog = false
+                            viewModel.deleteStock(stock!!.stockId.toString()) {
+                                navController.navigate(Destination.Stocks.routes)
+                            }
+                        }
+                        else{
+                            Toast.makeText(context, "wrong pin try again", Toast.LENGTH_LONG).show()
+                        }
+                    }) {
+                        Text(text = "Yes")
+                    }
+                },
+
+                dismissButton = {
+                    TextButton(onClick = {
+                        openDialog = false
+                    }) {
+                        Text(text = "No")
+                    }
+                },
+            )
+        }
+
+
         Box(
             modifier = Modifier.fillMaxSize()
         ) {
+
+            if (isLoading || isLoadingDelete) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.LightGray.copy(alpha = 0.5f))
+                        .clickable {}
+                )
+            }
+
             Column(
                 modifier = Modifier.fillMaxSize()
             ) {
@@ -50,7 +180,9 @@ fun StockInfoScreen(
                             .size(15.dp)
                             .align(Alignment.CenterStart)
                             .clickable {
-                               navController.navigate(Destination.Stocks.routes)
+                                if (!isLoading || !isLoadingDelete) {
+                                    navController.navigate(Destination.Stocks.routes)
+                                }
                             },
                         tint = ListOfColors.black
                     )
@@ -59,7 +191,8 @@ fun StockInfoScreen(
                         text = "Stock Info",
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
                             .align(Alignment.Center),
                         textAlign = TextAlign.Center
                     )
@@ -72,8 +205,10 @@ fun StockInfoScreen(
                             .size(15.dp)
                             .align(Alignment.CenterEnd)
                             .clickable {
-                                viewModel.retrieveStockHistory(stock?.stockId.toString())
-                                navController.navigate(Destination.StockHistory.routes)
+                                if (!isLoading || !isLoadingDelete) {
+                                    viewModel.retrieveStockHistory(stock?.stockId.toString())
+                                    navController.navigate(Destination.StockHistory.routes)
+                                }
                             },
                         tint = ListOfColors.black
                     )
@@ -83,7 +218,8 @@ fun StockInfoScreen(
 
                 Spacer(modifier = Modifier.padding(15.dp))
                 Box(
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
                         .height(50.dp)
                         .padding(start = 10.dp, end = 10.dp)
                 ) {
@@ -118,7 +254,8 @@ fun StockInfoScreen(
                 Spacer(modifier = Modifier.padding(10.dp))
 
                 Box(
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
                         .height(50.dp)
                         .padding(start = 10.dp, end = 10.dp)
                 ) {
@@ -154,8 +291,9 @@ fun StockInfoScreen(
 
                 Button(
                     onClick = {
-                          viewModel.getStock(stock!!)
-                          navController.navigate(Destination.EditStock.routes)
+                        if(!isLoading || !isLoadingDelete) {
+                           openDialogEdit = true
+                        }
                     },
                     shape = RoundedCornerShape(10.dp),
                     modifier = Modifier
@@ -176,7 +314,11 @@ fun StockInfoScreen(
 
 
                 Button(
-                    onClick = {},
+                    onClick = {
+                          if (!isLoading || !isLoadingDelete){
+                              openDialog = true
+                          }
+                    },
                     shape = RoundedCornerShape(10.dp),
                     modifier = Modifier
                         .fillMaxWidth(0.7f)
@@ -193,10 +335,17 @@ fun StockInfoScreen(
                 }
 
             }
+            if(isLoading || isLoadingDelete){
+                CircularProgressIndicator(
+                    modifier = Modifier
+                        .size(50.dp)
+                        .align(Alignment.Center)
+                )
+            }
         }
 
     }
-}
+
 
 
 

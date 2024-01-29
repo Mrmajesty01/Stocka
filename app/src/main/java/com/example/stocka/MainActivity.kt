@@ -30,10 +30,13 @@ import com.example.stocka.CustomerInfoScreen.CustomerInfoScreen
 import com.example.stocka.CustomerScreen.CustomersScreen
 import com.example.stocka.CustomerStockSearch.CustomerSearch
 import com.example.stocka.CustomerStockSearch.StockSearch
+import com.example.stocka.DailyReportScreen.DailyReportScreen
 import com.example.stocka.EditCustomerScreen.EditCustomerInfoScreen
+import com.example.stocka.EditExpenseScreen.EditExpenseScreen
 import com.example.stocka.EditSalesScreen.EditSalesScreen
 import com.example.stocka.EditStockScreen.EditStockInfoScreen
 import com.example.stocka.ExpenseInfoScreen.ExpenseInfoScreen
+import com.example.stocka.ExpenseScreen.ExpenseScreen
 import com.example.stocka.GenerateCreditReceipt.GenerateCreditReceiptScreen
 import com.example.stocka.GenerateReceiptScreen.GenerateReceiptScreen
 import com.example.stocka.HomeScreen.HomeScreen
@@ -55,7 +58,6 @@ import com.example.stocka.StockInfo.StockInfoScreen
 import com.example.stocka.StockScreen.StockScreen
 import com.example.stocka.Viemodel.AuthViewModel
 import com.example.stocka.Viemodel.SalesViewModel
-import com.example.stocka.data.Expense
 import com.example.stocka.main.NotificationMessage
 import com.example.stocka.ui.theme.StockaTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -120,7 +122,7 @@ class MainActivity : ComponentActivity() {
             }
 
             composable(Destination.BottomSheet.routes){
-                BSheet(navController)
+                BSheet(navController,authViewModel)
             }
 
             composable(Destination.Invoices.routes){
@@ -193,17 +195,7 @@ class MainActivity : ComponentActivity() {
             }
 
             composable(Destination.ExpenseInfo.routes){
-                val expenseData = navController
-                    .previousBackStackEntry
-                    ?.arguments
-                    ?.getParcelable<Expense>("expense")
-                expenseData.let {
-                    ExpenseInfoScreen(
-                        navController = navController,
-                        viewModel = authViewModel ,
-                        expense = expenseData
-                    )
-                }
+                    ExpenseInfoScreen(navController = navController, viewModel = authViewModel)
             }
 
             composable(Destination.EditSales.routes){
@@ -260,6 +252,18 @@ class MainActivity : ComponentActivity() {
 
             composable(Destination.CreditReceipt.routes){
                 GenerateCreditReceiptScreen(navController, authViewModel)
+            }
+
+            composable(Destination.ExpenseScreen.routes){
+                ExpenseScreen(navController = navController, viewModel = authViewModel )
+            }
+
+            composable(Destination.DailyReport.routes){
+                DailyReportScreen(navController = navController, viewModel = authViewModel )
+            }
+
+            composable(Destination.EditExpense.routes){
+                EditExpenseScreen(navController = navController, viewModel = authViewModel )
             }
 
             }

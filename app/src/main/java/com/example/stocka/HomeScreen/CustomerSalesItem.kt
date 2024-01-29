@@ -89,7 +89,7 @@ fun CustomerSalesItem(
                 }
 
                 Text(
-                    text = "Invoice Date",
+                    text = "Date",
                     modifier = Modifier.align(Alignment.TopCenter)
                 )
 
@@ -105,7 +105,7 @@ fun CustomerSalesItem(
                 )
 
                 Text(
-                    text = sales.type.toString() + sales.salesNo.toString(),
+                    text = sales.salesNo.toString(),
                     fontWeight = FontWeight.Light,
                     modifier = Modifier.align(Alignment.BottomEnd)
                 )

@@ -14,6 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.stocka.data.Expense
+import java.text.SimpleDateFormat
+import java.util.Date
 
 @Composable
 fun ExpenseItem(
@@ -24,13 +26,17 @@ fun ExpenseItem(
         elevation = 5.dp,
         modifier = Modifier
             .fillMaxWidth()
-            .height(100.dp)
+            .height(120.dp)
             .clickable {
                onClick.invoke(expense)
             },
         shape = RoundedCornerShape(15.dp)
 
     ) {
+        val formattedDate = expense?.expenseDate.let {
+            SimpleDateFormat("dd MMM yyyy").format(Date(it!!))
+        } ?: ""
+
         Box(
             modifier = Modifier.padding(start = 6.dp, end = 6.dp, top= 5.dp, bottom = 5.dp)
         ) {
@@ -42,7 +48,7 @@ fun ExpenseItem(
                     .height(40.dp)
             ){
                 Text(
-                    text = "Name of Expense",
+                    text = "Expense Name",
                     modifier = Modifier.align(Alignment.TopStart),
                     fontWeight = FontWeight.Medium
                 )
@@ -63,6 +69,26 @@ fun ExpenseItem(
                     text = expense.expenseCategory.toString(),
                     modifier = Modifier.align(Alignment.BottomEnd)
 
+                )
+
+            }
+
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.Center)
+                    .height(40.dp)
+            ){
+                Text(
+                    text = "Expense Date",
+                    modifier = Modifier.align(Alignment.TopCenter),
+                    fontWeight = FontWeight.Medium
+                )
+
+                Text(
+                    text = formattedDate,
+                    modifier = Modifier.align(Alignment.BottomCenter)
                 )
 
             }

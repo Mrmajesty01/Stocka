@@ -118,7 +118,7 @@ fun CustomerSearch(navController: NavController, viewModel: AuthViewModel){
                     value = searchValue,
                     onValueChange = {
                         searchValue = it
-                        viewModel.customerSearch(searchValue)
+                        viewModel.customerSearchWhenTyping(searchValue)
                     },
                     label = {
                         Text(text = "Search for a customer")

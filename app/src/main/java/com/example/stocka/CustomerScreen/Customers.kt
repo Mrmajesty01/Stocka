@@ -69,6 +69,7 @@ fun CustomersScreen(navController:NavController,viewModel: AuthViewModel){
         mutableStateOf(false)
     }
 
+
     Box(modifier = Modifier.fillMaxSize()){
         Column(
             modifier = Modifier.fillMaxSize()

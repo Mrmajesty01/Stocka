@@ -17,12 +17,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.stocka.Navigation.Destination
+import com.example.stocka.Viemodel.AuthViewModel
 import com.example.stocka.main.navigateTo
 
 @SuppressLint("SuspiciousIndentation")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BSheet(navController: NavController){
+fun BSheet(navController: NavController, viewModel: AuthViewModel){
     val sheetState = rememberModalBottomSheetState()
 
 
@@ -37,6 +38,8 @@ fun BSheet(navController: NavController){
             Row(
                 modifier = Modifier.fillMaxWidth()
                     .clickable {
+                        viewModel.customerSelected.value = null
+                        viewModel.stockSelected.value = null
                         navigateTo(navController, Destination.MakeSales)
                     }
             ){
@@ -98,7 +101,7 @@ fun BSheet(navController: NavController){
                 )
             }
 
-            Spacer(modifier = Modifier.padding(10.dp))
+            Spacer(modifier = Modifier.padding(30.dp))
     }
 
 }

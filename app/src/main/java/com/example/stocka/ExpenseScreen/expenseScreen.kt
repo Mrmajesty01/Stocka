@@ -1,5 +1,7 @@
-package com.example.stocka.CustomerStockSearch
+package com.example.stocka.ExpenseScreen
 
+
+import android.annotation.SuppressLint
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -17,7 +19,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.Divider
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.Text
@@ -27,6 +28,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIos
 import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Divider
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -43,57 +46,52 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.stocka.AddExpenseScreen.ExpenseItem
+import com.example.stocka.Navigation.Destination
 import com.example.stocka.Viemodel.AuthViewModel
-import com.example.stocka.main.CommonProgressSpinner
+import com.example.stocka.main.navigateTo
 import com.example.stocka.ui.theme.ListOfColors
 
+@OptIn(ExperimentalMaterial3Api::class)
+@SuppressLint("UnusedMaterialScaffoldPaddingParameter")
 @Composable
-fun StockSearch(navController:NavController, viewModel:AuthViewModel){
+fun ExpenseScreen(navController:NavController,viewModel: AuthViewModel){
 
-    val isLoading = viewModel.inProgress.value
-    val searchStockLoading = viewModel.stockSearchProgress.value
-    val searchedStock = viewModel.searchedStocks.value
-    val stocks = viewModel.stocks.value
+
     val focus = LocalFocusManager.current
-
+    val searchExpenseLoading = viewModel.expenseProgress.value
+    val searchedExpense = viewModel.expenseData.value
+    val expenses = viewModel.expenseData.value
     var searchValue by remember {
         mutableStateOf("")
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-
-        Column(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            var text by remember {
-                mutableStateOf("")
-            }
-
-            var active by remember {
-                mutableStateOf(false)
-            }
+        Column(modifier = Modifier.fillMaxSize()) {
 
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 10.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+                verticalAlignment = Alignment.CenterVertically,
+            ){
 
                 Icon(
                     imageVector = Icons.Default.ArrowBackIos,
-                    contentDescription = "ArrowBack",
+                    contentDescription = "BackIcon",
                     modifier = Modifier
                         .padding(start = 5.dp)
                         .size(15.dp)
                         .clickable {
-                            navController.popBackStack()
+                            if(!searchExpenseLoading) {
+                                navController.popBackStack()
+                            }
                         },
                     tint = ListOfColors.black
                 )
 
                 Text(
-                    text = "Select a stock",
+                    text = "Expenses",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center,
@@ -103,8 +101,6 @@ fun StockSearch(navController:NavController, viewModel:AuthViewModel){
             }
 
             Divider(thickness = 1.dp, color = ListOfColors.lightGrey)
-
-            Spacer(modifier = Modifier.padding(10.dp))
 
             Column(
                 modifier = Modifier
@@ -119,10 +115,10 @@ fun StockSearch(navController:NavController, viewModel:AuthViewModel){
                     value = searchValue,
                     onValueChange = {
                         searchValue = it
-                        viewModel.stockSearchWhenTyping(searchValue)
+                        viewModel.expenseSearchWhenTyping(searchValue)
                     },
-                    label ={
-                        Text(text = "Search for a stock")
+                    label = {
+                        Text(text = "Search for expense")
                     },
                     modifier = Modifier
                         .padding(8.dp)
@@ -135,7 +131,7 @@ fun StockSearch(navController:NavController, viewModel:AuthViewModel){
                     ),
                     keyboardActions = KeyboardActions(
                         onSearch = {
-                            viewModel.stockSearch(searchValue)
+                            viewModel.expenseSearch(searchValue)
                             focus.clearFocus()
                         }
                     ),
@@ -151,7 +147,7 @@ fun StockSearch(navController:NavController, viewModel:AuthViewModel){
                     leadingIcon = {
                         IconButton(onClick = {
                             searchValue = ""
-                            viewModel.retrieveStocks()
+                            viewModel.retrieveExpense()
                             focus.clearFocus()
                         }) {
                             if (searchValue.isEmpty()) {
@@ -163,7 +159,7 @@ fun StockSearch(navController:NavController, viewModel:AuthViewModel){
                     },
                     trailingIcon = {
                         IconButton(onClick = {
-                            viewModel.stockSearch(searchValue)
+                            viewModel.invoiceSearch(searchValue)
                             focus.clearFocus()
                         }) {
                             Icon(imageVector = Icons.Filled.Search , contentDescription = null )
@@ -180,32 +176,34 @@ fun StockSearch(navController:NavController, viewModel:AuthViewModel){
                         .fillMaxWidth()
                 ) {
                     if (searchValue.isEmpty()) {
-                        if (stocks.isEmpty()) {
+                        if(expenses.isEmpty()) {
                             Column(
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier
+                                    .fillMaxWidth()
                                     .fillMaxSize(),
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.Center
                             ) {
                                 Text(
-                                    text = "You have not added any stock yet"
+                                    text = "You have no expenses yet"
                                 )
                             }
-                        } else {
+                        }
+                        else {
                             LazyColumn(
                                 modifier = Modifier
                                     .wrapContentHeight()
                                     .fillMaxSize(),
                                 verticalArrangement = Arrangement.spacedBy(7.dp)
                             ) {
-                                items(stocks) { stock ->
-                                    StockSearchItem(stock = stock) { stock ->
-                                        viewModel.onStockSelected(stock)
-                                        navController.popBackStack()
+                                items(expenses) {
+                                    ExpenseItem(expense = it){
+                                        viewModel.getExpense(it)
+                                        navigateTo(navController,Destination.ExpenseInfo)
+                                        }
                                     }
                                 }
                             }
-                        }
                     }
                     else{
                         LazyColumn(
@@ -214,10 +212,11 @@ fun StockSearch(navController:NavController, viewModel:AuthViewModel){
                                 .fillMaxSize(),
                             verticalArrangement = Arrangement.spacedBy(7.dp)
                         ) {
-                            items(searchedStock) { stock ->
-                                StockSearchItem(stock = stock){stock->
-                                    viewModel.onStockSelected(stock)
-                                    navController.popBackStack()
+                            items(expenses) {
+                                ExpenseItem(expense = it){
+                                    viewModel.getExpense(it)
+                                    navigateTo(navController,Destination.ExpenseInfo)
+                                    }
                                 }
                             }
                         }
@@ -225,10 +224,13 @@ fun StockSearch(navController:NavController, viewModel:AuthViewModel){
                 }
 
             }
-
-        }
-        if(searchStockLoading){
-            CommonProgressSpinner()
         }
     }
-}
+
+
+
+//@Preview (showBackground = true)
+//@Composable
+//fun InvoicePrev(){
+//    InvoiceScreen()
+//}

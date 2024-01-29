@@ -2,6 +2,7 @@ package com.example.stocka.CreditInfoScreen
 
 import android.annotation.SuppressLint
 import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
@@ -13,8 +14,10 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIos
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -24,7 +27,6 @@ import androidx.navigation.NavController
 import com.example.stocka.Navigation.Destination
 import com.example.stocka.SalesInfoScreen.SalesItemsDetails
 import com.example.stocka.Viemodel.AuthViewModel
-import com.example.stocka.main.NavPram
 import com.example.stocka.main.navigateTo
 import com.example.stocka.ui.theme.ListOfColors
 import java.text.SimpleDateFormat
@@ -34,14 +36,72 @@ import java.util.Date
 @Composable
 fun CreditInfoScreen(navController: NavController, viewModel: AuthViewModel){
 
-        val creditItem = viewModel.salesDetail.value
-        val sales = viewModel.salesData.value
-        val customer = viewModel.customerSelected.value
-        val context = LocalContext.current
+    val creditItem = viewModel.salesDetail.value
+    val sales = viewModel.salesData.value
+    val isLoading = viewModel.inProgress.value
+    val isLoadingDelete = viewModel.deleteSaleProgress.value
+    val customer = viewModel.customerSelected.value
+    val context = LocalContext.current
 
-        val formattedDate = creditItem?.salesDate?.let {
-            SimpleDateFormat("dd MMM yyyy").format(Date(it))
-        } ?: ""
+    val formattedDate = creditItem?.salesDate?.let {
+        SimpleDateFormat("dd MMM yyyy").format(Date(it))
+    } ?: ""
+
+    var openDialog by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    if(creditItem?.sales.isNullOrEmpty()){
+        navigateTo(navController,Destination.BottomSheet)
+    }
+
+    if(openDialog){
+        AlertDialog(
+            onDismissRequest = { openDialog = false },
+
+            title = {
+                Text(text = "Delete Sale")
+            },
+
+            text = {
+                Text(text = "Are you sure you want to delete sale ?")
+            },
+
+            confirmButton = {
+                TextButton(onClick = {
+                    openDialog = false
+                    viewModel.deleteEntireDocument(creditItem!!.customerId.toString(), creditItem!!.salesId.toString()){
+                        navController.navigate(Destination.Home.routes)
+                    }
+                }) {
+                    Text(text = "Yes")
+                }
+            },
+
+            dismissButton = {
+                TextButton(onClick = {
+                    openDialog = false
+                }) {
+                    Text(text = "No")
+                }
+            },
+        )
+    }
+
+    Box(modifier = Modifier
+        .fillMaxSize()
+    ) {
+
+
+        if (isLoading || isLoadingDelete) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.LightGray.copy(alpha = 0.5f))
+                    .clickable {}
+            )
+        }
+
 
         Column(
             modifier = Modifier
@@ -61,8 +121,10 @@ fun CreditInfoScreen(navController: NavController, viewModel: AuthViewModel){
                     modifier = Modifier.padding(start = 5.dp)
                         .size(15.dp)
                         .clickable {
-                            viewModel.customerSelected.value = null
-                           navigateTo(navController,Destination.Customers)
+                            if(!isLoading || !isLoadingDelete) {
+                                viewModel.customerSelected.value = null
+                                navigateTo(navController, Destination.Customers)
+                            }
                         },
                     tint = ListOfColors.black
                 )
@@ -110,7 +172,7 @@ fun CreditInfoScreen(navController: NavController, viewModel: AuthViewModel){
                     )
 
                     Text(
-                        text = creditItem?.type.toString() + creditItem?.salesNo.toString(),
+                        text = creditItem?.salesNo.toString(),
                         modifier = Modifier.align(Alignment.CenterEnd)
                     )
 
@@ -160,18 +222,19 @@ fun CreditInfoScreen(navController: NavController, viewModel: AuthViewModel){
 
 
                 LazyColumn(
-                    modifier = Modifier.wrapContentHeight(),
+                    modifier = Modifier.wrapContentHeight()
+                        .background(if (isLoading || isLoadingDelete) ListOfColors.lightGrey else Color.Transparent),
                     verticalArrangement = Arrangement.spacedBy(7.dp)
                 ) {
                     items(sales) { sale ->
-                        sale.sales.let { salesList ->
-                            salesList?.forEach { singleSale ->
-                                SalesItemsDetails(sales = singleSale){
-                                    viewModel.onSaleSelected(sale)
-                                    navigateTo(navController,
-                                        Destination.EditSales,
-                                        NavPram("sale",it)
-                                    )
+                        if(!isLoading || !isLoadingDelete) {
+                            sale.sales.let { salesList ->
+                                salesList?.forEach { singleSale ->
+                                    SalesItemsDetails(sales = singleSale,viewModel) {
+                                        viewModel.fromPage("creditInfo")
+                                        viewModel.onSaleSelected(sale)
+                                        navigateTo(navController, Destination.EditSales)
+                                    }
                                 }
                             }
                         }
@@ -268,15 +331,21 @@ fun CreditInfoScreen(navController: NavController, viewModel: AuthViewModel){
                     Button(
                         onClick = {
 
-                            if (creditItem?.sales.isNullOrEmpty() || (creditItem?.sales?.size ?: 0) < 5) {
-                                viewModel.onCustomerSelected(customer!!)
-                                viewModel.onSaleSelected(creditItem!!)
-                                viewModel.fromPage("notHome")
-                                navigateTo(navController,Destination.AddCredit)
-                            }
-
-                            else{
-                                Toast.makeText(context,"Limit exceeded for adding sale", Toast.LENGTH_LONG).show()
+                            if(!isLoading || !isLoadingDelete) {
+                                if (creditItem?.sales.isNullOrEmpty() || (creditItem?.sales?.size
+                                        ?: 0) < 5
+                                ) {
+                                    viewModel.onCustomerSelected(customer!!)
+                                    viewModel.onSaleSelected(creditItem!!)
+                                    viewModel.fromPage("notHome")
+                                    navigateTo(navController, Destination.AddCredit)
+                                } else {
+                                    Toast.makeText(
+                                        context,
+                                        "Limit exceeded for adding sale",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
                             }
                         },
                         shape = RoundedCornerShape(10.dp),
@@ -295,8 +364,10 @@ fun CreditInfoScreen(navController: NavController, viewModel: AuthViewModel){
 
                     Button(
                         onClick = {
-                            viewModel.onSaleSelected(creditItem!!)
-                            navController.navigate(Destination.CreditReceipt.routes)
+                            if(!isLoading || !isLoadingDelete) {
+                                viewModel.onSaleSelected(creditItem!!)
+                                navController.navigate(Destination.CreditReceipt.routes)
+                            }
                         },
                         shape = RoundedCornerShape(10.dp),
                         colors = ButtonDefaults.buttonColors(ListOfColors.orange),
@@ -316,9 +387,11 @@ fun CreditInfoScreen(navController: NavController, viewModel: AuthViewModel){
 
                 Button(
                     onClick = {
-                        navController.navigate(Destination.PayCredit.routes)
-                        viewModel.onSaleSelected(creditItem!!)
-                        viewModel.onCustomerSelectedHome(creditItem.customerId.toString())
+                        if(!isLoading || !isLoadingDelete) {
+                            navController.navigate(Destination.PayCredit.routes)
+                            viewModel.onSaleSelected(creditItem!!)
+                            viewModel.onCustomerSelectedHome(creditItem.customerId.toString())
+                        }
                     },
                     shape = RoundedCornerShape(10.dp),
                     colors = ButtonDefaults.buttonColors(ListOfColors.orange),
@@ -334,7 +407,11 @@ fun CreditInfoScreen(navController: NavController, viewModel: AuthViewModel){
                 Spacer(modifier = Modifier.padding(10.dp))
 
                 Button(
-                    onClick = {},
+                    onClick = {
+                              if(!isLoading || !isLoadingDelete){
+                                  openDialog = true
+                              }
+                    },
                     shape = RoundedCornerShape(10.dp),
                     colors = ButtonDefaults.buttonColors(ListOfColors.orange),
                     modifier = Modifier.fillMaxWidth(0.7f)
@@ -348,6 +425,15 @@ fun CreditInfoScreen(navController: NavController, viewModel: AuthViewModel){
 
             }
         }
+
+        if(isLoading || isLoadingDelete){
+            CircularProgressIndicator(
+                modifier = Modifier.size(50.dp)
+                    .align(Alignment.Center)
+            )
+        }
+
+    }
 
     }
 

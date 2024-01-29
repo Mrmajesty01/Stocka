@@ -1,6 +1,7 @@
 package com.example.stocka.AddCredit
 
 import android.widget.Toast
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
+import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Divider
 import androidx.compose.material.Icon
 import androidx.compose.material.LocalTextStyle
@@ -33,6 +35,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
@@ -69,6 +72,8 @@ fun AddCreditScreen(navController: NavController, viewModel: AuthViewModel){
     val context = LocalContext.current
     val userId = viewModel.userData.value
     val salesId = UUID.randomUUID()
+    var isLoadingStock = viewModel.onMultipleSoldProgress.value
+    var isLoading = viewModel.inProgress.value
     val customer = viewModel.customerSelected.value
     val stockSelected = viewModel.stockSelected.value
     val stocks = viewModel.stocks.value
@@ -106,197 +111,219 @@ fun AddCreditScreen(navController: NavController, viewModel: AuthViewModel){
         totalCost = updateTotalCost(productCost.toFloat(),quantity.toInt())
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-    ) {
+    Box(modifier = Modifier.fillMaxSize()) {
 
-
-        Row(
-            modifier = Modifier.fillMaxWidth()
-                .padding(top = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-
-            ) {
-            Icon(
-                imageVector = Icons.Default.ArrowBackIos,
-                contentDescription = "BackIcon",
-                modifier = Modifier.padding(start = 5.dp)
-                    .size(15.dp)
-                    .clickable {
-                        navController.popBackStack()
-                    },
-                tint = ListOfColors.black
-            )
-
-
-
-            Text(
-                text = "Add Credit",
-                fontSize = 20.sp,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
-                fontWeight = FontWeight.Bold
+        if (isLoading || isLoadingStock) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.LightGray.copy(alpha = 0.5f))
+                    .clickable {}
             )
         }
 
-        Divider(thickness = 1.dp, color = ListOfColors.lightGrey)
-
         Column(
-            modifier = Modifier.fillMaxSize()
-                .padding(20.dp)
+            modifier = Modifier
+                .fillMaxSize()
         ) {
 
 
-            Box(
-                modifier = Modifier
-                    .height(45.dp)
-                    .fillMaxWidth()
-            ) {
+            Row(
+                modifier = Modifier.fillMaxWidth()
+                    .padding(top = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+
+                ) {
+                Icon(
+                    imageVector = Icons.Default.ArrowBackIos,
+                    contentDescription = "BackIcon",
+                    modifier = Modifier.padding(start = 5.dp)
+                        .size(15.dp)
+                        .clickable {
+                            if(!isLoading || !isLoadingStock) {
+                                navController.popBackStack()
+                            }
+                        },
+                    tint = ListOfColors.black
+                )
+
+
+
                 Text(
-                    text = "Customer name",
-                    modifier = Modifier.align(Alignment.TopStart),
+                    text = "Add Credit",
+                    fontSize = 20.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(),
                     fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "Amount Owed",
-                    modifier = Modifier.align(Alignment.TopEnd),
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = customer?.customerName.toString(),
-                    modifier = Modifier.align(Alignment.BottomStart)
-                )
-                Text(
-                    text = customer?.customerBalance.toString(),
-                    modifier = Modifier.align(Alignment.BottomEnd)
                 )
             }
 
-            Spacer(modifier = Modifier.padding(10.dp))
+            Divider(thickness = 1.dp, color = ListOfColors.lightGrey)
+
+            Column(
+                modifier = Modifier.fillMaxSize()
+                    .padding(20.dp)
+            ) {
 
 
-            Box(
-                modifier = Modifier.fillMaxWidth()
-            )
-            {
+                Box(
+                    modifier = Modifier
+                        .height(45.dp)
+                        .fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Customer name",
+                        modifier = Modifier.align(Alignment.TopStart),
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Amount Owed",
+                        modifier = Modifier.align(Alignment.TopEnd),
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = customer?.customerName.toString(),
+                        modifier = Modifier.align(Alignment.BottomStart)
+                    )
+                    Text(
+                        text = customer?.customerBalance.toString(),
+                        modifier = Modifier.align(Alignment.BottomEnd)
+                    )
+                }
+
+                Spacer(modifier = Modifier.padding(10.dp))
+
+
+                Box(
+                    modifier = Modifier.fillMaxWidth()
+                )
+                {
+
+                    OutlinedTextField(
+                        value = productName,
+                        onValueChange = {
+                            productName = it
+                        },
+                        label = {
+                            Text(
+                                text = "Product Name"
+                            )
+                        },
+                        modifier = Modifier.align(Alignment.Center),
+                        enabled = false
+                    )
+
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "addIcon",
+                        modifier = Modifier.align(Alignment.CenterEnd)
+                            .clickable {
+                                if (!isLoading || !isLoadingStock) {
+                                    if (stocks.isEmpty()) {
+                                        Toast
+                                            .makeText(
+                                                context,
+                                                "you have no stock in your stock's list, add one to select",
+                                                Toast.LENGTH_LONG
+                                            )
+                                            .show()
+                                    } else {
+                                        navigateTo(navController, Destination.SearchStock)
+                                    }
+                                }
+                            }
+                    )
+                }
+
+                Spacer(modifier = Modifier.padding(10.dp))
 
                 OutlinedTextField(
-                    value = productName,
+                    value = productCost,
                     onValueChange = {
-                        productName = it
+                        productCost = it
+                        totalCost = updateTotalCost(productCost.toFloat(), quantity.toInt())
                     },
                     label = {
                         Text(
-                            text = "Product Name"
+                            text = "Item Cost"
                         )
                     },
-                    modifier = Modifier.align(Alignment.Center),
-                    enabled = false
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    enabled = !isLoading || !isLoadingStock
                 )
 
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "addIcon",
-                    modifier = Modifier.align(Alignment.CenterEnd)
-                        .clickable {
-                            if (stocks.isEmpty()) {
-                                Toast
-                                    .makeText(
-                                        context,
-                                        "you have no stock in your stock's list, add one to select",
-                                        Toast.LENGTH_LONG
-                                    )
-                                    .show()
-                            } else {
-                                navigateTo(navController, Destination.SearchStock)
+                Spacer(modifier = Modifier.padding(10.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth()
+                        .height(70.dp),
+                    horizontalArrangement = Arrangement.SpaceAround,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Quantity",
+                    )
+
+                    Icon(
+                        imageVector = Icons.Default.Remove,
+                        contentDescription = "removeIcon",
+                        modifier = Modifier.clickable {
+                            if (!isLoading || !isLoadingStock) {
+                                if (quantity.toInt() > 0) {
+                                    var temp = quantity.toInt()
+                                    temp--
+                                    quantity = temp.toString();
+                                }
                             }
                         }
-                )
-            }
-
-            Spacer(modifier = Modifier.padding(10.dp))
-
-            OutlinedTextField(
-                value = productCost,
-                onValueChange = {
-                    productCost = it
-                    totalCost = updateTotalCost(productCost.toFloat(),quantity.toInt())
-                },
-                label = {
-                    Text(
-                        text = "Item Cost"
                     )
-                },
-                modifier = Modifier.align(Alignment.CenterHorizontally),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
-            )
 
-            Spacer(modifier = Modifier.padding(10.dp))
+                    OutlinedTextField(
+                        modifier = Modifier
+                            .width(100.dp)
+                            .height(50.dp),
+                        value = quantity,
+                        onValueChange = {
+                            quantity = it
+                            totalCost = updateTotalCost(productCost.toFloat(), quantity.toInt())
+                        },
+                        textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        enabled = !isLoading || !isLoadingStock
+                    )
 
-            Row(
-                modifier = Modifier.fillMaxWidth()
-                    .height(70.dp),
-                horizontalArrangement = Arrangement.SpaceAround,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Quantity",
-                )
-
-                Icon(
-                    imageVector = Icons.Default.Remove,
-                    contentDescription = "removeIcon",
-                    modifier = Modifier.clickable {
-                        if (quantity.toInt() > 0) {
-                            var temp = quantity.toInt()
-                            temp--
-                            quantity = temp.toString();
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "addIcon",
+                        modifier = Modifier.clickable {
+                            if(!isLoading || !isLoadingStock) {
+                                var temp = quantity.toInt()
+                                temp++
+                                quantity = temp.toString()
+                            }
                         }
-                    }
-                )
+                    )
+
+                }
+
+                Spacer(modifier = Modifier.padding(10.dp))
 
                 OutlinedTextField(
-                    modifier = Modifier
-                        .width(100.dp)
-                        .height(50.dp),
-                    value = quantity,
+                    value = totalCost,
                     onValueChange = {
-                        quantity = it
-                        totalCost = updateTotalCost(productCost.toFloat(),quantity.toInt())
+                        totalCost = it
+                        totalCost = updateTotalCost(productCost.toFloat(), quantity.toInt())
                     },
-                    textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    label = {
+                        Text(
+                            text = "Total Cost"
+                        )
+                    },
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    enabled = !isLoading || !isLoadingStock
                 )
-
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = "addIcon",
-                    modifier = Modifier.clickable {
-                        var temp = quantity.toInt()
-                        temp++
-                        quantity = temp.toString()
-                    }
-                )
-
-            }
-
-            Spacer(modifier = Modifier.padding(10.dp))
-
-            OutlinedTextField(
-                value = totalCost,
-                onValueChange = {
-                    totalCost = it
-                    totalCost = updateTotalCost(productCost.toFloat(),quantity.toInt())
-                },
-                label = {
-                    Text(
-                        text = "Total Cost"
-                    )
-                },
-                modifier = Modifier.align(Alignment.CenterHorizontally),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
-            )
 
 //            Spacer(modifier = Modifier.padding(20.dp))
 //
@@ -403,202 +430,220 @@ fun AddCreditScreen(navController: NavController, viewModel: AuthViewModel){
 //                )
 //            }
 
-            Spacer(modifier = Modifier.padding(10.dp))
+                Spacer(modifier = Modifier.padding(10.dp))
 
-            Button(
-                onClick = {
+                Button(
+                    onClick = {
+                        focus.clearFocus(force = true)
+
+                        if(!isLoading || !isLoadingStock) {
+
+                            if (stockToUpdate.any { it.first.stockName == productName }) {
+                                val existingStock =
+                                    stockToUpdate.firstOrNull { it.first.stockName == productName }
+
+                                existingStock?.let { (existingProduct, existingQuantity) ->
+                                    val newTotalQuantity = existingQuantity + quantity.toInt()
+
+                                    // Check if the new total quantity exceeds a certain limit
+                                    if (newTotalQuantity > stockSelected?.stockQuantity?.toInt()!!) {
+                                        Toast.makeText(
+                                            context,
+                                            "The quantity selected in your add list with this quantity is greater than stock quantity available",
+                                            Toast.LENGTH_LONG
+                                        ).show()
+                                        return@Button
+                                    }
+                                }
+                            }
 
 
-                    focus.clearFocus(force = true)
 
-
-                    if (stockToUpdate.any { it.first.stockName == productName }) {
-                        val existingStock = stockToUpdate.firstOrNull { it.first.stockName == productName }
-
-                        existingStock?.let { (existingProduct, existingQuantity) ->
-                            val newTotalQuantity = existingQuantity + quantity.toInt()
-
-                            // Check if the new total quantity exceeds a certain limit
-                            if (newTotalQuantity > stockSelected?.stockQuantity?.toInt()!!) {
-                                Toast.makeText(context,"The quantity selected in your add list with this quantity is greater than stock quantity available",
-                                    Toast.LENGTH_LONG).show()
+                            if (!quantity.isInt()) {
+                                // Show a toast message indicating that the count is not an integer
+                                Toast.makeText(
+                                    context,
+                                    "invalid value for stock quantity",
+                                    Toast.LENGTH_LONG
+                                ).show()
                                 return@Button
                             }
-                        }
-                    }
+
+                            if (customer?.customerName.toString().isBlank()) {
+                                Toast.makeText(
+                                    context,
+                                    "Add a customer name and a customer to make sales",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                                return@Button
+                            }
+                            if (stockSelected != null && stockSelected.stockQuantity?.toInt()!! < quantity.toInt()) {
+                                Toast.makeText(
+                                    context,
+                                    "The quantity selected is greater than stock quantity available",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                                return@Button
+                            }
+
+                            if (customer?.customerName.toString()
+                                    .isEmpty() || (productName.isEmpty() && stockToUpdate.isEmpty()) || (productCost.isEmpty() && stockToUpdate.isEmpty()) || (totalCost.isEmpty() && stockToUpdate.isEmpty())
+                            ) {
+                                Toast.makeText(
+                                    context,
+                                    "Add a customer name and a product to make sales",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                                return@Button
+                            }
+
+                            if (sales.isNotEmpty()) {
 
 
-
-                    if (!quantity.isInt()) {
-                        // Show a toast message indicating that the count is not an integer
-                        Toast.makeText(context, "invalid value for stock quantity", Toast.LENGTH_LONG).show()
-                        return@Button
-                    }
-
-                    if(customer?.customerName.toString().isBlank()){
-                        Toast.makeText(
-                            context,
-                            "Add a customer name and a customer to make sales",
-                            Toast.LENGTH_LONG
-                        ).show()
-                        return@Button
-                    }
-                    if(stockSelected != null && stockSelected.stockQuantity?.toInt()!! < quantity.toInt()){
-                        Toast.makeText(context,"The quantity selected is greater than stock quantity available",
-                            Toast.LENGTH_LONG).show()
-                        return@Button
-                    }
-
-                    if (customer?.customerName.toString().isEmpty() || (productName.isEmpty() && stockToUpdate.isEmpty()) || (productCost.isEmpty()&& stockToUpdate.isEmpty()) || (totalCost.isEmpty()&& stockToUpdate.isEmpty())) {
-                        Toast.makeText(
-                            context,
-                            "Add a customer name and a product to make sales",
-                            Toast.LENGTH_LONG
-                        ).show()
-                        return@Button
-                    }
-
-                    if(sales.isNotEmpty()){
+                                if (stockSelected != null) {
+                                    stockToUpdate.add(Pair(stockSelected, quantity.toInt()))
+                                    var profit = productCost.toInt()
+                                        ?.minus(stockSelected?.stockPurchasePrice?.toInt()!!)
+                                    val sale =
+                                        SingleSale(
+                                            saleId = salesId.toString(),
+                                            userId = userId?.userId,
+                                            customerName = customer?.customerName.toString(),
+                                            productName = productName,
+                                            quantity = quantity,
+                                            price = productCost,
+                                            totalPrice = totalCost,
+                                            profit = profit.toString()
+                                        )
+                                    sales.last().add(sale)
+                                }
 
 
-                        if (stockSelected != null) {
-                            stockToUpdate.add(Pair(stockSelected, quantity.toInt()))
-                            var profit = productCost.toInt()
-                                ?.minus(stockSelected?.stockPurchasePrice?.toInt()!!)
-                            val sale =
-                                SingleSale(
-                                    saleId = salesId.toString(),
-                                    userId = userId?.userId,
+                                viewModel.onAddCredit(
                                     customerName = customer?.customerName.toString(),
-                                    productName = productName,
-                                    quantity = quantity,
-                                    price = productCost,
-                                    totalPrice = totalCost,
-                                    profit = profit.toString()
-                                )
-                            sales.last().add(sale)
-                        }
+                                    customerId = if (customer?.customerId != null) customer.customerId.toString()
+                                    else UUID.randomUUID().toString(),
+                                    sales = sales.flatMap { it.sales },
+                                    totalPrice = sales.flatMap { it.sales }
+                                        .sumByDouble { it.totalPrice?.toDoubleOrNull() ?: 0.0 }
+                                        .toString(),
+                                    totalProfit = sales.flatMap { it.sales }
+                                        .sumByDouble {
+                                            (it.profit?.toDoubleOrNull()
+                                                ?: 0.0) * (it.quantity?.toDoubleOrNull() ?: 0.0)
+                                        }
+                                        .toString(),
+                                    totalQuantity = sales.flatMap { it.sales }
+                                        .sumByDouble { it.quantity?.toDoubleOrNull() ?: 0.0 }
+                                        .toString(),
+                                    sale = selected!!,
+                                    stockQuantityList = stockToUpdate
+                                ) {
+                                    viewModel.stockSelected.value = null
+                                    viewModel.customerSelected.value = null
+                                    sales = emptyList()
+                                    stockToUpdate.clear()
 
-                        viewModel.onMultipleStocksSold(stockToUpdate)
-                        viewModel.onAddCredit(
-                            customerName = customer?.customerName.toString(),
-                            customerId = if(customer?.customerId!=null) customer.customerId.toString()
-                            else UUID.randomUUID().toString(),
-                            sales = sales.flatMap { it.sales },
-                            totalPrice = sales.flatMap { it.sales }
-                                .sumByDouble { it.totalPrice?.toDoubleOrNull() ?: 0.0 }
-                                .toString(),
-                            totalProfit = sales.flatMap { it.sales }
-                                .sumByDouble {
-                                    (it.profit?.toDoubleOrNull()?:0.0) * (it.quantity?.toDoubleOrNull()?:0.0)
+                                    if (fromPage == "home") {
+                                        navigateTo(navController, Destination.CreditInfoHome)
+                                    } else {
+                                        viewModel.getSale(selected.salesId.toString())
+                                        navigateTo(navController, Destination.CreditInfo)
+                                    }
+
                                 }
-                                .toString(),
-                            totalQuantity = sales.flatMap { it.sales }
-                                .sumByDouble { it.quantity?.toDoubleOrNull() ?: 0.0 }
-                                .toString(),
-                            sale = selected!!
-                        ) {
-                            viewModel.stockSelected.value = null
-                            viewModel.customerSelected.value = null
-                            sales = emptyList()
-                            stockToUpdate.clear()
-
-                            if(fromPage=="home"){
-                                navigateTo(navController, Destination.CreditInfoHome)
-                            }
-
-                            else{
-                                viewModel.getSale(selected.salesId.toString())
-                                navigateTo(navController, Destination.CreditInfo)
-                            }
-
-                        }
 
 
-                    }
+                            } else {
 
-                    else {
-
-                        if (stockSelected != null) {
-                            stockToUpdate.add(Pair(stockSelected, quantity.toInt()))
-                        }
-
-                        viewModel.onMultipleStocksSold(stockToUpdate)
-
-                        var profit = productCost.toInt()
-                            ?.minus(stockSelected?.stockPurchasePrice?.toInt()!!)
-
-
-                        val sale =
-                            SingleSale(
-                                saleId = salesId.toString(),
-                                userId = userId?.userId,
-                                customerName = customer?.customerName.toString(),
-                                productName = productName,
-                                quantity = quantity,
-                                price = productCost,
-                                totalPrice = totalCost,
-                                profit = profit.toString()
-                            )
-                        if (sales.isNotEmpty()) {
-                            sales.last().add(sale)
-                        } else {
-                            sales = listOf(MakeSale(listOf(sale)))
-                        }
-
-                        viewModel.onAddCredit(
-                            customerName = customer?.customerName.toString(),
-                            customerId = if (customer?.customerId != null) customer.customerId.toString()
-                            else UUID.randomUUID().toString(),
-                            sales = sales.flatMap { it.sales },
-                            totalPrice = sales.flatMap { it.sales }
-                                .sumByDouble { it.totalPrice?.toDoubleOrNull() ?: 0.0 }
-                                .toString(),
-                            totalProfit = sales.flatMap { it.sales }
-                                .sumByDouble {
-                                    (it.profit?.toDoubleOrNull()
-                                        ?: 0.0) * (it.quantity?.toDoubleOrNull() ?: 0.0)
+                                if (stockSelected != null) {
+                                    stockToUpdate.add(Pair(stockSelected, quantity.toInt()))
                                 }
-                                .toString(),
-                            totalQuantity = sales.flatMap { it.sales }
-                                .sumByDouble { it.quantity?.toDoubleOrNull() ?: 0.0 }
-                                .toString(),
-                            sale = selected!!
-                        ) {
-                            viewModel.stockSelected.value = null
-                            viewModel.customerSelected.value = null
-                            sales = emptyList()
-                            stockToUpdate.clear()
 
-                            if(fromPage=="home"){
-                                viewModel.getSale(selected.salesId.toString())
-                                navigateTo(navController, Destination.CreditInfoHome)
-                                viewModel.onCustomerSelectedHome(selected.customerId.toString())
-                            }
 
-                            else{
-                                viewModel.getSale(selected.salesId.toString())
-                                navigateTo(navController, Destination.CreditInfo)
-                                viewModel.onCustomerSelectedHome(selected.customerId.toString())
+
+                                var profit = productCost.toInt()
+                                    ?.minus(stockSelected?.stockPurchasePrice?.toInt()!!)
+
+
+                                val sale =
+                                    SingleSale(
+                                        saleId = salesId.toString(),
+                                        userId = userId?.userId,
+                                        customerName = customer?.customerName.toString(),
+                                        productName = productName,
+                                        quantity = quantity,
+                                        price = productCost,
+                                        totalPrice = totalCost,
+                                        profit = profit.toString()
+                                    )
+                                if (sales.isNotEmpty()) {
+                                    sales.last().add(sale)
+                                } else {
+                                    sales = listOf(MakeSale(listOf(sale)))
+                                }
+
+                                viewModel.onAddCredit(
+                                    customerName = customer?.customerName.toString(),
+                                    customerId = if (customer?.customerId != null) customer.customerId.toString()
+                                    else UUID.randomUUID().toString(),
+                                    sales = sales.flatMap { it.sales },
+                                    totalPrice = sales.flatMap { it.sales }
+                                        .sumByDouble { it.totalPrice?.toDoubleOrNull() ?: 0.0 }
+                                        .toString(),
+                                    totalProfit = sales.flatMap { it.sales }
+                                        .sumByDouble {
+                                            (it.profit?.toDoubleOrNull()
+                                                ?: 0.0) * (it.quantity?.toDoubleOrNull() ?: 0.0)
+                                        }
+                                        .toString(),
+                                    totalQuantity = sales.flatMap { it.sales }
+                                        .sumByDouble { it.quantity?.toDoubleOrNull() ?: 0.0 }
+                                        .toString(),
+                                    sale = selected!!,
+                                    stockQuantityList = stockToUpdate
+                                ) {
+                                    viewModel.stockSelected.value = null
+                                    viewModel.customerSelected.value = null
+                                    sales = emptyList()
+                                    stockToUpdate.clear()
+
+                                    if (fromPage == "home") {
+                                        viewModel.getSale(selected.salesId.toString())
+                                        navigateTo(navController, Destination.CreditInfoHome)
+                                        viewModel.onCustomerSelectedHome(selected.customerId.toString())
+                                    } else {
+                                        viewModel.getSale(selected.salesId.toString())
+                                        navigateTo(navController, Destination.CreditInfo)
+                                        viewModel.onCustomerSelectedHome(selected.customerId.toString())
+                                    }
+                                }
                             }
                         }
-                    }
 
-
-                },
-                modifier = Modifier
-                    .fillMaxWidth(0.7f)
-                    .height(50.dp)
-                    .align(Alignment.CenterHorizontally),
-                shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.buttonColors(ListOfColors.orange)
-            ) {
-                Text(
-                    text = "Done",
-                    color = ListOfColors.black
-                )
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth(0.7f)
+                        .height(50.dp)
+                        .align(Alignment.CenterHorizontally),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(ListOfColors.orange)
+                ) {
+                    Text(
+                        text = "Done",
+                        color = ListOfColors.black
+                    )
+                }
             }
         }
+        if (isLoading || isLoadingStock) {
+            CircularProgressIndicator(
+                modifier = Modifier
+                    .size(50.dp)
+                    .align(Alignment.Center)
+            )
+        }
+
     }
 }
 
