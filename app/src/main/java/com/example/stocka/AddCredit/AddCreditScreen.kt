@@ -108,7 +108,7 @@ fun AddCreditScreen(navController: NavController, viewModel: AuthViewModel){
     if (stockSelected != null) {
         productName = stockSelected.stockName.toString()
         productCost = stockSelected.stockSellingPrice.toString()
-        totalCost = updateTotalCost(productCost.toFloat(),quantity.toInt())
+        totalCost = stockSelected.stockTotalPrice.toString()
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -238,10 +238,17 @@ fun AddCreditScreen(navController: NavController, viewModel: AuthViewModel){
                 Spacer(modifier = Modifier.padding(10.dp))
 
                 OutlinedTextField(
-                    value = productCost,
+                    value =  if(stockSelected!=null) viewModel.stockSelected.value!!.stockSellingPrice.toString() else "",
                     onValueChange = {
-                        productCost = it
-                        totalCost = updateTotalCost(productCost.toFloat(), quantity.toInt())
+                        if (it.isNullOrEmpty() || stockSelected?.stockSellingPrice == null) {
+                            viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockSellingPrice = "")
+                            viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockTotalPrice = "")
+                        }
+                        else{
+                            viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockSellingPrice = it)
+                            viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockTotalPrice = updateTotalCost(viewModel.stockSelected.value!!.stockSellingPrice!!.toFloat(), quantity.toInt()))
+                            viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockFixedSellingPrice = it)
+                        }
                     },
                     label = {
                         Text(
@@ -285,8 +292,15 @@ fun AddCreditScreen(navController: NavController, viewModel: AuthViewModel){
                             .height(50.dp),
                         value = quantity,
                         onValueChange = {
-                            quantity = it
-                            totalCost = updateTotalCost(productCost.toFloat(), quantity.toInt())
+                            if (it.isNotEmpty()) {
+                                val newValue = it.toInt()
+                                quantity = if (newValue >= 0) newValue.toString() else "1"
+                                viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockSellingPrice = (updateTotalCost(viewModel.stockSelected.value!!.stockSellingPrice!!.toFloat(), quantity.toInt())))
+                            } else {
+                                quantity = "1"
+                                viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockSellingPrice = (updateTotalCost(viewModel.stockSelected.value!!.stockSellingPrice!!.toFloat(), 1)))
+
+                            }
                         },
                         textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -310,10 +324,9 @@ fun AddCreditScreen(navController: NavController, viewModel: AuthViewModel){
                 Spacer(modifier = Modifier.padding(10.dp))
 
                 OutlinedTextField(
-                    value = totalCost,
+                    value = if(stockSelected!=null) viewModel.stockSelected.value!!.stockTotalPrice.toString() else "",
                     onValueChange = {
-                        totalCost = it
-                        totalCost = updateTotalCost(productCost.toFloat(), quantity.toInt())
+                        viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockTotalPrice = it)
                     },
                     label = {
                         Text(
@@ -325,110 +338,7 @@ fun AddCreditScreen(navController: NavController, viewModel: AuthViewModel){
                     enabled = !isLoading || !isLoadingStock
                 )
 
-//            Spacer(modifier = Modifier.padding(20.dp))
-//
-//            Button(
-//                onClick = {
-//
-//                    focus.clearFocus(force = true)
-//
-//                    if (stockToUpdate.any { it.first.stockName == productName }) {
-//                        val existingStock = stockToUpdate.firstOrNull { it.first.stockName == productName }
-//
-//                        existingStock?.let { (existingProduct, existingQuantity) ->
-//                            val newTotalQuantity = existingQuantity + quantity.toInt()
-//
-//                            // Check if the new total quantity exceeds a certain limit
-//                            if (newTotalQuantity > stockSelected?.stockQuantity?.toInt()!!) {
-//                                Toast.makeText(context,"The quantity selected in your add list with this quantity is greater than stock quantity available",
-//                                    Toast.LENGTH_LONG).show()
-//                                return@Button
-//                            }
-//                        }
-//                    }
-//
-//                    if(customer?.customerName.toString().isBlank()){
-//                        Toast.makeText(
-//                            context,
-//                            "Add a customer name and a  customer to make sales",
-//                            Toast.LENGTH_LONG
-//                        ).show()
-//                        return@Button
-//                    }
-//                    if(stockSelected != null && stockSelected.stockQuantity?.toInt()!! < quantity.toInt()){
-//                        Toast.makeText(context,"The quantity selected is greater than stock quantity available",
-//                            Toast.LENGTH_LONG).show()
-//                        return@Button
-//                    }
-//                    if (customer?.customerName.toString()!!.isEmpty() || productName.isEmpty() || productCost.isEmpty() || totalCost.isEmpty()) {
-//                        Toast.makeText(
-//                            context,
-//                            "Add a customer name and a product to make sales",
-//                            Toast.LENGTH_LONG
-//                        ).show()
-//                        return@Button
-//                    } else {
-//                        if (stockSelected != null) {
-//                            stockToUpdate.add(Pair(stockSelected, quantity.toInt()))
-//                        }
-//                        val profit = stockSelected?.stockSellingPrice?.toInt()
-//                            ?.minus(stockSelected.stockPurchasePrice?.toInt()!!)
-//
-//
-//                        val sale =
-//                            SingleSale(
-//                                saleId = salesId.toString(),
-//                                userId = userId?.userId,
-//                                customerName = customer?.customerName.toString(),
-//                                productName = productName,
-//                                quantity = quantity,
-//                                price = productCost,
-//                                totalPrice = totalCost,
-//                                profit = profit.toString()
-//                            )
-//                        if (sales.isNotEmpty() && sales.last().isFull()) {
-//                            Toast.makeText(
-//                                context,
-//                                "Limit exceeded for adding sales",
-//                                Toast.LENGTH_LONG
-//                            ).show()
-//                            stockToUpdate.removeAt(stockToUpdate.size - 1)
-//                            viewModel.stockSelected.value = null
-//                        } else {
-//                            productName = ""
-//                            productCost = ""
-//                            totalCost = ""
-//                            quantity = "1"
-//                            if (sales.isNotEmpty()) {
-//                                sales.last().add(sale)
-//                            } else {
-//                                sales = listOf(
-//                                    MakeSale(
-//                                        listOf(
-//                                            sale
-//                                        )
-//                                    )
-//                                )
-//                            }
-//                            viewModel.stockSelected.value = null
-//                        }
-//                    }
-//
-//
-//
-//                },
-//                modifier = Modifier
-//                    .fillMaxWidth(0.7f)
-//                    .height(50.dp)
-//                    .align(Alignment.CenterHorizontally),
-//                shape = RoundedCornerShape(10.dp),
-//                colors = ButtonDefaults.buttonColors(ListOfColors.orange)
-//            ) {
-//                Text(
-//                    text = "Add Goods",
-//                    color = ListOfColors.black
-//                )
-//            }
+
 
                 Spacer(modifier = Modifier.padding(10.dp))
 
@@ -487,79 +397,17 @@ fun AddCreditScreen(navController: NavController, viewModel: AuthViewModel){
                             }
 
                             if (customer?.customerName.toString()
-                                    .isEmpty() || (productName.isEmpty() && stockToUpdate.isEmpty()) || (productCost.isEmpty() && stockToUpdate.isEmpty()) || (totalCost.isEmpty() && stockToUpdate.isEmpty())
-                            ) {
+                                    .isEmpty() || (productName.isEmpty() && stockToUpdate.isEmpty()) || (productCost.isEmpty() && stockToUpdate.isEmpty()) || (totalCost.isEmpty() && stockToUpdate.isEmpty())) {
                                 Toast.makeText(
                                     context,
                                     "Add a customer name and a product to make sales",
                                     Toast.LENGTH_LONG
                                 ).show()
-                                return@Button
                             }
-
-                            if (sales.isNotEmpty()) {
-
-
-                                if (stockSelected != null) {
-                                    stockToUpdate.add(Pair(stockSelected, quantity.toInt()))
-                                    var profit = productCost.toInt()
-                                        ?.minus(stockSelected?.stockPurchasePrice?.toInt()!!)
-                                    val sale =
-                                        SingleSale(
-                                            saleId = salesId.toString(),
-                                            userId = userId?.userId,
-                                            customerName = customer?.customerName.toString(),
-                                            productName = productName,
-                                            quantity = quantity,
-                                            price = productCost,
-                                            totalPrice = totalCost,
-                                            profit = profit.toString()
-                                        )
-                                    sales.last().add(sale)
-                                }
-
-
-                                viewModel.onAddCredit(
-                                    customerName = customer?.customerName.toString(),
-                                    customerId = if (customer?.customerId != null) customer.customerId.toString()
-                                    else UUID.randomUUID().toString(),
-                                    sales = sales.flatMap { it.sales },
-                                    totalPrice = sales.flatMap { it.sales }
-                                        .sumByDouble { it.totalPrice?.toDoubleOrNull() ?: 0.0 }
-                                        .toString(),
-                                    totalProfit = sales.flatMap { it.sales }
-                                        .sumByDouble {
-                                            (it.profit?.toDoubleOrNull()
-                                                ?: 0.0) * (it.quantity?.toDoubleOrNull() ?: 0.0)
-                                        }
-                                        .toString(),
-                                    totalQuantity = sales.flatMap { it.sales }
-                                        .sumByDouble { it.quantity?.toDoubleOrNull() ?: 0.0 }
-                                        .toString(),
-                                    sale = selected!!,
-                                    stockQuantityList = stockToUpdate
-                                ) {
-                                    viewModel.stockSelected.value = null
-                                    viewModel.customerSelected.value = null
-                                    sales = emptyList()
-                                    stockToUpdate.clear()
-
-                                    if (fromPage == "home") {
-                                        navigateTo(navController, Destination.CreditInfoHome)
-                                    } else {
-                                        viewModel.getSale(selected.salesId.toString())
-                                        navigateTo(navController, Destination.CreditInfo)
-                                    }
-
-                                }
-
-
-                            } else {
-
+                            else{
                                 if (stockSelected != null) {
                                     stockToUpdate.add(Pair(stockSelected, quantity.toInt()))
                                 }
-
 
 
                                 var profit = productCost.toInt()

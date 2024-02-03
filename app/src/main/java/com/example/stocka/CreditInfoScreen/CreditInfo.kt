@@ -24,6 +24,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.stocka.HomeScreen.formatNumberWithDelimiter
 import com.example.stocka.Navigation.Destination
 import com.example.stocka.SalesInfoScreen.SalesItemsDetails
 import com.example.stocka.Viemodel.AuthViewModel
@@ -51,9 +52,20 @@ fun CreditInfoScreen(navController: NavController, viewModel: AuthViewModel){
         mutableStateOf(false)
     }
 
+
+
     if(creditItem?.sales.isNullOrEmpty()){
         navigateTo(navController,Destination.BottomSheet)
     }
+
+    var totalAmount = creditItem?.totalPrice!!.toDoubleOrNull() ?: 0.0
+    var formattedTotalAmount = formatNumberWithDelimiter(totalAmount!!)
+
+    var totalAmountPaid = creditItem?.amountPaid!!.toDoubleOrNull() ?: 0.0
+    var formattedTotalAmountPaid = formatNumberWithDelimiter(totalAmountPaid!!)
+
+    var totalBalance = creditItem?.balance!!.toDoubleOrNull() ?: 0.0
+    var formattedTotalBalance = formatNumberWithDelimiter(totalBalance!!)
 
     if(openDialog){
         AlertDialog(
@@ -267,7 +279,7 @@ fun CreditInfoScreen(navController: NavController, viewModel: AuthViewModel){
                     )
 
                     Text(
-                        text = creditItem?.totalPrice.toString(),
+                        text = formattedTotalAmount,
                         modifier = Modifier.align(Alignment.BottomEnd)
                     )
 
@@ -290,7 +302,7 @@ fun CreditInfoScreen(navController: NavController, viewModel: AuthViewModel){
                     )
 
                     Text(
-                        text = creditItem?.amountPaid.toString(),
+                        text = formattedTotalAmountPaid,
                         modifier = Modifier.align(Alignment.BottomEnd)
                     )
 
@@ -313,7 +325,7 @@ fun CreditInfoScreen(navController: NavController, viewModel: AuthViewModel){
                     )
 
                     Text(
-                        text = creditItem?.balance.toString(),
+                        text = formattedTotalBalance,
                         modifier = Modifier.align(Alignment.BottomEnd)
                     )
 
@@ -333,7 +345,7 @@ fun CreditInfoScreen(navController: NavController, viewModel: AuthViewModel){
 
                             if(!isLoading || !isLoadingDelete) {
                                 if (creditItem?.sales.isNullOrEmpty() || (creditItem?.sales?.size
-                                        ?: 0) < 5
+                                        ?: 0) < 15
                                 ) {
                                     viewModel.onCustomerSelected(customer!!)
                                     viewModel.onSaleSelected(creditItem!!)

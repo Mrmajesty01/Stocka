@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.stocka.HomeScreen.formatNumberWithDelimiter
 import com.example.stocka.data.Stock
 
 @Composable
@@ -33,6 +34,14 @@ fun StockItem(
             shape = RoundedCornerShape(15.dp)
 
         ) {
+            var stockPrice = stock.stockSellingPrice!!.toDoubleOrNull()
+            var formattedStockPrice = formatNumberWithDelimiter(stockPrice!!)
+
+            var stockQty = stock.stockQuantity!!.toDoubleOrNull()
+            var formattedStockQty = formatNumberWithDelimiter(stockQty!!)
+
+            var stockQtySold = stock.stockQuantitySold!!.toDoubleOrNull()
+            var formattedStockQtySold = formatNumberWithDelimiter(stockQtySold!!)
             Box(
                 modifier = Modifier.padding(top= 5.dp, bottom = 5.dp)
             ) {
@@ -65,7 +74,7 @@ fun StockItem(
 
 
                     Text(
-                        text = "${stock.stockSellingPrice}",
+                        text = "$formattedStockPrice",
                         modifier = Modifier.align(Alignment.BottomEnd)
                             .padding(end = 6.dp)
                     )
@@ -86,7 +95,7 @@ fun StockItem(
                     )
 
                     Text(
-                        text = "${stock.stockQuantitySold}",
+                        text = "$formattedStockQtySold",
                         modifier = Modifier.align(Alignment.BottomStart)
                             .padding(start = 8.dp)
 
@@ -100,7 +109,7 @@ fun StockItem(
                     )
 
                     Text(
-                        text = "${stock.stockQuantity}",
+                        text = "$formattedStockQty",
                         modifier = Modifier.align(Alignment.BottomEnd)
                             .padding(end = 6.dp)
                     )

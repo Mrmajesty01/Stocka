@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Divider
 import androidx.compose.material.Icon
 import androidx.compose.material.Text
@@ -60,10 +62,11 @@ fun DailyReportScreen(navController: NavController, viewModel:AuthViewModel){
                 Icon(
                     imageVector = Icons.Default.ArrowBackIos,
                     contentDescription = "BackIcon",
-                    modifier = Modifier.padding(start = 5.dp)
+                    modifier = Modifier
+                        .padding(start = 5.dp)
                         .size(15.dp)
                         .clickable {
-                               navController.popBackStack()
+                            navController.popBackStack()
                         },
                     tint = ListOfColors.black
                 )
@@ -80,8 +83,11 @@ fun DailyReportScreen(navController: NavController, viewModel:AuthViewModel){
             Divider(thickness = 1.dp, color = ListOfColors.lightGrey)
 
             Column(
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .fillMaxSize()
                     .padding(all = 20.dp)
+                    .verticalScroll(rememberScrollState())
             ) {
 
 
@@ -206,20 +212,30 @@ fun DailyReportScreen(navController: NavController, viewModel:AuthViewModel){
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .wrapContentHeight()
+                        .height(45.dp)
                 )
                 {
 
                     Text(
                         text = "Most Sold Stock Today",
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.align(Alignment.TopCenter)
-                            .padding(bottom = 16.dp)
+                        modifier = Modifier.align(Alignment.BottomCenter)
+
                     )
+                }
+
+                Spacer(modifier = Modifier.padding(10.dp))
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .wrapContentHeight()
+                )
+                {
 
                     Text(
                         text = "Product Name: $mostBoughtProduct, Quantity Sold: $mostBoughtProductQty",
-                        modifier = Modifier.align(Alignment.BottomCenter)
+                        modifier = Modifier.align(Alignment.TopCenter)
                     )
                 }
 

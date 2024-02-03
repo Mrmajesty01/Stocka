@@ -13,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.stocka.HomeScreen.formatNumberWithDelimiter
 import com.example.stocka.data.Expense
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -37,6 +38,8 @@ fun ExpenseItem(
             SimpleDateFormat("dd MMM yyyy").format(Date(it!!))
         } ?: ""
 
+        val expenseAmount = expense.expenseAmount!!.toDoubleOrNull()
+        val formattedExpenseAmount = formatNumberWithDelimiter(expenseAmount!!)
         Box(
             modifier = Modifier.padding(start = 6.dp, end = 6.dp, top= 5.dp, bottom = 5.dp)
         ) {
@@ -50,23 +53,23 @@ fun ExpenseItem(
                 Text(
                     text = "Expense Name",
                     modifier = Modifier.align(Alignment.TopStart),
-                    fontWeight = FontWeight.Medium
                 )
 
                 Text(
                     text = expense.expenseName.toString(),
+                    fontWeight = FontWeight.Light,
                     modifier = Modifier.align(Alignment.BottomStart)
                 )
 
                 Text(
                     text = "Expense Category",
                     modifier = Modifier.align(Alignment.TopEnd),
-                    fontWeight = FontWeight.Medium
 
                 )
 
                 Text(
                     text = expense.expenseCategory.toString(),
+                    fontWeight = FontWeight.Light,
                     modifier = Modifier.align(Alignment.BottomEnd)
 
                 )
@@ -82,12 +85,12 @@ fun ExpenseItem(
             ){
                 Text(
                     text = "Expense Date",
-                    modifier = Modifier.align(Alignment.TopCenter),
-                    fontWeight = FontWeight.Medium
+                    modifier = Modifier.align(Alignment.TopCenter)
                 )
 
                 Text(
                     text = formattedDate,
+                    fontWeight = FontWeight.Light,
                     modifier = Modifier.align(Alignment.BottomCenter)
                 )
 
@@ -102,23 +105,23 @@ fun ExpenseItem(
             ){
                 Text(
                     text = "Expense Description",
-                    modifier = Modifier.align(Alignment.TopStart),
-                    fontWeight = FontWeight.Medium
+                    modifier = Modifier.align(Alignment.TopStart)
                 )
 
                 Text(
                     text = expense.expenseDescription.toString(),
+                    fontWeight = FontWeight.Light,
                     modifier = Modifier.align(Alignment.BottomStart)
                 )
 
                 Text(
                     text = "Expense Amount",
-                    modifier = Modifier.align(Alignment.TopEnd),
-                    fontWeight = FontWeight.Medium
+                    modifier = Modifier.align(Alignment.TopEnd)
                 )
 
                 Text(
-                    text = expense.expenseAmount.toString(),
+                    text = formattedExpenseAmount,
+                    fontWeight = FontWeight.Light,
                     modifier = Modifier.align(Alignment.BottomEnd)
                 )
             }

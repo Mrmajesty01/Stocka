@@ -35,6 +35,8 @@ import com.example.stocka.Viemodel.AuthViewModel
 import com.example.stocka.main.NavPram
 import com.example.stocka.main.navigateTo
 import com.example.stocka.ui.theme.ListOfColors
+import java.text.NumberFormat
+import java.util.Locale
 
 @SuppressLint("UnusedMaterialScaffoldPaddingParameter")
 @Composable
@@ -47,6 +49,14 @@ fun HomeScreen(navController: NavController, viewModel: AuthViewModel) {
     var expenses = viewModel.expenseHomeData.value
     val businessName = if (userData?.businessName == null) "" else userData.businessName
 
+
+    val totalSales = userData?.totalSales?.toDoubleOrNull() ?: 0.0
+    val totalExpenses = userData?.totalExpenses?.toDoubleOrNull() ?: 0.0
+    val totalProfit = userData?.totalProfit?.toDoubleOrNull() ?: 0.0
+
+    val formattedTotalSales = formatNumberWithDelimiter(totalSales)
+    val formattedTotalExpenses = formatNumberWithDelimiter(totalExpenses)
+    val formattedTotalProfit = formatNumberWithDelimiter(totalProfit)
 
     var state by remember {
         mutableStateOf(0)
@@ -176,7 +186,7 @@ fun HomeScreen(navController: NavController, viewModel: AuthViewModel) {
 
                             0 -> {
                                 Text(
-                                    text = "₦${userData?.totalSales ?: 0.0}",
+                                    text = "₦$formattedTotalSales",
                                     fontSize = 20.sp,
                                     fontWeight = FontWeight.ExtraBold,
                                     fontStyle = FontStyle.Italic,
@@ -187,7 +197,7 @@ fun HomeScreen(navController: NavController, viewModel: AuthViewModel) {
 
                             1 -> {
                                 Text(
-                                    text = "₦${userData?.totalExpenses ?: 0.0}",
+                                    text = "₦$formattedTotalExpenses",
                                     fontSize = 20.sp,
                                     fontWeight = FontWeight.ExtraBold,
                                     fontStyle = FontStyle.Italic,
@@ -198,7 +208,7 @@ fun HomeScreen(navController: NavController, viewModel: AuthViewModel) {
 
                             2 -> {
                                 Text(
-                                    text = "₦${userData?.totalProfit ?: 0.0}",
+                                    text = "₦$formattedTotalProfit",
                                     fontSize = 20.sp,
                                     fontWeight = FontWeight.ExtraBold,
                                     fontStyle = FontStyle.Italic,
@@ -501,6 +511,10 @@ fun HomeScreen(navController: NavController, viewModel: AuthViewModel) {
             )
         }
     }
+}
+fun formatNumberWithDelimiter(number: Double): String {
+    val numberFormat = NumberFormat.getInstance(Locale.getDefault())
+    return numberFormat.format(number)
 }
 
 

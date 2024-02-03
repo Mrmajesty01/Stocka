@@ -36,6 +36,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.stocka.HomeScreen.formatNumberWithDelimiter
 import com.example.stocka.Navigation.Destination
 import com.example.stocka.Viemodel.AuthViewModel
 import com.example.stocka.main.navigateTo
@@ -64,9 +65,15 @@ fun SalesInfoHome(navController: NavController,viewModel:AuthViewModel) {
         SimpleDateFormat("dd MMM yyyy").format(Date(it))
     } ?: ""
 
+
+
     if(sale?.sales.isNullOrEmpty()){
         navigateTo(navController,Destination.Home)
     }
+
+    var totalAmount = sale?.totalPrice?.toDoubleOrNull() ?: 0.0
+    var formattedTotalAmount = formatNumberWithDelimiter(totalAmount!!)
+
 
     var openDialog by rememberSaveable {
         mutableStateOf(false)
@@ -110,6 +117,8 @@ fun SalesInfoHome(navController: NavController,viewModel:AuthViewModel) {
 
 
     sale?.userId.let {
+
+
         Box(
             modifier = Modifier.fillMaxSize()
         ) {
@@ -288,7 +297,7 @@ fun SalesInfoHome(navController: NavController,viewModel:AuthViewModel) {
                     )
 
                     Text(
-                        text = sale?.totalPrice.toString(),
+                        text = formattedTotalAmount,
                         modifier = Modifier.align(Alignment.BottomEnd)
                     )
 
@@ -304,7 +313,7 @@ fun SalesInfoHome(navController: NavController,viewModel:AuthViewModel) {
                     Button(
                         onClick = {
                             if(!isLoading || !isLoadingCustomer || !isLoadingDelete) {
-                                if (sale?.sales.isNullOrEmpty() || (sale?.sales?.size ?: 0) < 5) {
+                                if (sale?.sales.isNullOrEmpty() || (sale?.sales?.size ?: 0) < 15) {
                                     viewModel.onSaleSelected(sale!!)
                                     viewModel.fromPage("home")
                                     navigateTo(navController, Destination.AddSale)

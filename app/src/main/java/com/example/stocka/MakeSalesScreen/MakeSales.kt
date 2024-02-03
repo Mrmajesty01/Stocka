@@ -40,10 +40,10 @@ import java.util.UUID
 private data class MakeSale(
     var sales: List<SingleSale> = emptyList()
 ) {
-    fun isFull() = sales.size >= 5
+    fun isFull() = sales.size >= 15
 
     fun add(sale: SingleSale) {
-        if (sales.size < 5) {
+        if (sales.size < 15) {
             sales = sales + sale
         }
     }
@@ -84,9 +84,9 @@ fun MakeSalesScreen(navController:NavController,viewModel: AuthViewModel) {
 //    }
 
 
-//    var empty by rememberSaveable {
-//        mutableStateOf(false)
-//    }
+    var empty by rememberSaveable {
+        mutableStateOf(false)
+    }
 
     var customerName by rememberSaveable {
         mutableStateOf("")
@@ -119,18 +119,28 @@ fun MakeSalesScreen(navController:NavController,viewModel: AuthViewModel) {
     }
 
 
-    if(customerSelected != null){
+    if(customerSelected != null && customers.any { it.customerName == customerSelected.customerName } && customers.any { it.customerId == customerSelected.customerId }){
             customerName = customerSelected.customerName.toString()
             editCustomerClickable = true
 
     }
 
-    if(stockSelected != null) {
+    if(stockSelected != null && stocks.any {it.stockName == stockSelected.stockName}  && stocks.any {it.stockId == stockSelected.stockId}) {
             productName = stockSelected.stockName.toString()
             cost = stockSelected.stockSellingPrice.toString()
             totalCost = stockSelected.stockTotalPrice.toString()
             editStockClickable = true
 
+    }
+
+    if(stockSelected!=null) {
+        if (stockSelected!!.stockSellingPrice == null && stockSelected.stockFixedSellingPrice == null && stockSelected.stockPurchasePrice == null && stockSelected.stockTotalPrice == null) {
+            stockSelected.stockSellingPrice = ""
+            stockSelected.stockPurchasePrice = ""
+            stockSelected.stockTotalPrice = ""
+            stockSelected.stockFixedSellingPrice = ""
+            empty = true
+        }
     }
 
 
@@ -200,6 +210,7 @@ fun MakeSalesScreen(navController:NavController,viewModel: AuthViewModel) {
                     OutlinedTextField(
                         value = if(customerSelected!=null) viewModel.customerSelected.value!!.customerName.toString() else "",
                         onValueChange = {
+                          customerName = it
                           viewModel.customerSelected.value = Customer()
                           viewModel.customerSelected.value = viewModel.customerSelected.value!!.copy(customerName = it)
                         },
@@ -291,7 +302,7 @@ fun MakeSalesScreen(navController:NavController,viewModel: AuthViewModel) {
                         if (it.isNullOrEmpty() || stockSelected?.stockSellingPrice == null) {
                             viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockSellingPrice = "")
                             viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockTotalPrice = "")
-//                            empty = true
+                            empty = true
                         }
                         else {
                             viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockSellingPrice = it)
@@ -327,7 +338,7 @@ fun MakeSalesScreen(navController:NavController,viewModel: AuthViewModel) {
                         imageVector = Icons.Default.Remove,
                         contentDescription = "removeIcon",
                         modifier = Modifier.clickable {
-                            if(!isLoading || !isLoadingStock ) {
+                            if(!isLoading || !isLoadingStock  ||!empty) {
                                 if (quantity.toInt() > 0) {
                                     if (viewModel.stockSelected.value != null) {
                                         var temp = quantity.toInt()
@@ -371,14 +382,14 @@ fun MakeSalesScreen(navController:NavController,viewModel: AuthViewModel) {
                             )
                         },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        enabled = !isLoading || !isLoadingStock
+                        enabled = !isLoading || !isLoadingStock ||!empty
                     )
 
                     Icon(
                         imageVector = Icons.Default.Add,
                         contentDescription = "addIcon",
                         modifier = Modifier.clickable {
-                            if (!isLoading || !isLoadingStock) {
+                            if (!isLoading || !isLoadingStock ||!empty) {
                                 if (viewModel.stockSelected.value != null) {
                                     var temp = quantity.toInt()
                                     temp++

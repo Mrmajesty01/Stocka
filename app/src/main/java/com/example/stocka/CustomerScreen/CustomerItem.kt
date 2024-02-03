@@ -13,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.stocka.HomeScreen.formatNumberWithDelimiter
 import com.example.stocka.data.Customer
 
 @Composable
@@ -30,6 +31,8 @@ fun CustomerItem(
         shape = RoundedCornerShape(15.dp)
 
     ) {
+        var customerBalance = customer.customerBalance!!.toDoubleOrNull()
+        var formattedCustomerBalance = formatNumberWithDelimiter(customerBalance!!)
         Box(
             modifier = Modifier.padding(start = 6.dp, end = 6.dp, top= 5.dp, bottom = 5.dp)
         ) {
@@ -54,7 +57,7 @@ fun CustomerItem(
             )
 
             Text(
-                text = "${customer.customerBalance}",
+                text = "$formattedCustomerBalance",
                 modifier = Modifier.align(Alignment.BottomEnd)
 
             )

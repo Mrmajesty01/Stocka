@@ -14,8 +14,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.stocka.data.Sales
+import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Date
+import java.util.Locale
+
 
 @Composable
 fun CustomerSalesItem(
@@ -36,6 +39,16 @@ fun CustomerSalesItem(
         val formattedDate = sales?.salesDate?.let {
             SimpleDateFormat("dd MMM yyyy").format(Date(it))
         } ?: ""
+
+
+        val salesAmountPaid = sales.amountPaid!!.toDoubleOrNull()
+        val salesTotalAmount = sales.totalPrice!!.toDoubleOrNull()
+        val salesBalance = sales.balance!!.toDoubleOrNull()
+
+        val formattedTotalAmountPaid = formatNumberWithDelimiter(salesAmountPaid!!)
+        val formattedTotalAmount = formatNumberWithDelimiter(salesTotalAmount!!)
+        val formattedBalanceAmount = formatNumberWithDelimiter(salesBalance!!)
+
         Box(
             modifier = Modifier.padding(start = 6.dp, end = 6.dp, top = 5.dp, bottom = 5.dp)
         ) {
@@ -62,7 +75,7 @@ fun CustomerSalesItem(
                 )
 
                 Text(
-                    text = sales.totalPrice.toString(),
+                    text = formattedTotalAmount,
                     fontWeight = FontWeight.Light,
                     modifier = Modifier.align(Alignment.BottomEnd)
                 )
@@ -123,7 +136,7 @@ fun CustomerSalesItem(
                 )
 
                 Text(
-                    text = sales.amountPaid.toString(),
+                    text = formattedTotalAmountPaid,
                     fontWeight = FontWeight.Light,
                     modifier = Modifier.align(Alignment.BottomStart)
                 )
@@ -134,7 +147,7 @@ fun CustomerSalesItem(
                 )
 
                 Text(
-                    text = sales.balance.toString(),
+                    text = formattedBalanceAmount,
                     fontWeight = FontWeight.Light,
                     modifier = Modifier.align(Alignment.BottomEnd)
                 )
@@ -142,7 +155,13 @@ fun CustomerSalesItem(
 
         }
     }
+
 }
+
+
+
+
+
 
 
 //@Preview(showBackground = true)

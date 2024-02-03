@@ -19,6 +19,7 @@ import com.example.stocka.AddCredit.AddCreditScreen
 import com.example.stocka.AddCustomerScreen.AddCustomerScreen
 import com.example.stocka.AddExpenseScreen.AddExpenseScreen
 import com.example.stocka.AddStockScreen.AddStockScreen
+import com.example.stocka.AddToStock.AddToStockScreen
 import com.example.stocka.BottomSheet.BSheet
 import com.example.stocka.BusinessDetail.BusinessDetailsScreen
 import com.example.stocka.BusinessDetail.EditBusinessDetailsScreen
@@ -264,6 +265,10 @@ class MainActivity : ComponentActivity() {
 
             composable(Destination.EditExpense.routes){
                 EditExpenseScreen(navController = navController, viewModel = authViewModel )
+            }
+
+            composable(Destination.AddToStock.routes){
+                AddToStockScreen(navController = navController, viewModel = authViewModel )
             }
 
             }

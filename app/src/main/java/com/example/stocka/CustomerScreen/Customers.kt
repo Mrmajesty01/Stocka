@@ -28,8 +28,11 @@ import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusState
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
@@ -46,7 +49,7 @@ import com.example.stocka.Viemodel.AuthViewModel
 import com.example.stocka.main.CommonProgressSpinner
 import com.example.stocka.main.navigateTo
 
-@OptIn(ExperimentalMaterial3Api::class)
+
 @SuppressLint("UnusedMaterialScaffoldPaddingParameter")
 @Composable
 fun CustomersScreen(navController:NavController,viewModel: AuthViewModel){
@@ -57,6 +60,15 @@ fun CustomersScreen(navController:NavController,viewModel: AuthViewModel){
     val searchedCustomer = viewModel.searchedCustomer.value
     val focus = LocalFocusManager.current
     val totalAmountOwingCustomers = viewModel.totalAmountOwed.value
+
+
+    var searching by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    var isTextFieldActive by rememberSaveable {
+        mutableStateOf(true)
+    }
 
     var searchValue by remember {
         mutableStateOf("")
@@ -111,7 +123,10 @@ fun CustomersScreen(navController:NavController,viewModel: AuthViewModel){
                     modifier = Modifier
                         .padding(8.dp)
                         .fillMaxWidth()
-                        .border(1.dp, Color.LightGray, CircleShape),
+                        .border(1.dp, Color.LightGray, CircleShape)
+                        .onFocusChanged {focusState: FocusState ->
+                            searching = focusState.isFocused
+                        },
                     shape = CircleShape,
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Text,
@@ -121,7 +136,12 @@ fun CustomersScreen(navController:NavController,viewModel: AuthViewModel){
                         onSearch = {
                             viewModel.customerSearch(searchValue)
                             focus.clearFocus()
-                        }
+                            searching = false
+                        },
+                        onDone = {
+                            focus.clearFocus()
+                            isTextFieldActive = false
+                        },
                     ),
                     maxLines = 1,
                     singleLine = true,
@@ -218,7 +238,9 @@ fun CustomersScreen(navController:NavController,viewModel: AuthViewModel){
 
             }
 
-            BottomNavMenu(selectedItem = BottomNavItem.Customers, navController = navController)
+            if(!searching || !isTextFieldActive) {
+                BottomNavMenu(selectedItem = BottomNavItem.Customers, navController = navController)
+            }
         }
 
         if(searchCustomerLoading){

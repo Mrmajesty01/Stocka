@@ -35,6 +35,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.stocka.HomeScreen.formatNumberWithDelimiter
 import com.example.stocka.Navigation.Destination
 import com.example.stocka.Viemodel.AuthViewModel
 import com.example.stocka.main.navigateTo
@@ -62,6 +63,9 @@ fun SalesInfoScreen(navController: NavController,viewModel:AuthViewModel) {
     if(salesItem?.sales.isNullOrEmpty()){
         navigateTo(navController,Destination.BottomSheet)
     }
+
+    var totalAmount = salesItem?.totalPrice!!.toDoubleOrNull() ?: 0.0
+    var formattedTotalAmount = formatNumberWithDelimiter(totalAmount!!)
 
     if(openDialog){
         AlertDialog(
@@ -284,7 +288,7 @@ fun SalesInfoScreen(navController: NavController,viewModel:AuthViewModel) {
                     )
 
                     Text(
-                        text = salesItem?.totalPrice.toString(),
+                        text = formattedTotalAmount,
                         modifier = Modifier.align(Alignment.BottomEnd)
                     )
 
@@ -301,7 +305,7 @@ fun SalesInfoScreen(navController: NavController,viewModel:AuthViewModel) {
                         onClick = {
                             if(!isLoading || !isLoadingDelete) {
                                 if (salesItem?.sales.isNullOrEmpty() || (salesItem?.sales?.size
-                                        ?: 0) < 5
+                                        ?: 0) < 15
                                 ) {
                                     viewModel.onSaleSelected(salesItem!!)
                                     viewModel.fromPage("notHome")

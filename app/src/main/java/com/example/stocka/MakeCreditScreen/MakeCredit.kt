@@ -39,10 +39,10 @@ import java.util.UUID
 internal data class MakeSale(
     var sales: List<SingleSale> = emptyList()
 ) {
-    fun isFull() = sales.size >= 5
+    fun isFull() = sales.size >= 15
 
     fun add(sale: SingleSale) {
-        if (sales.size < 5) {
+        if (sales.size < 15) {
             sales = sales + sale
         }
     }
@@ -87,10 +87,19 @@ fun MakeCreditScreen(navController: NavController, viewModel: AuthViewModel){
     var quantity by rememberSaveable {
         mutableStateOf("1")
     }
-    if (stockSelected != null) {
+    if (stockSelected != null && stocks.any {it.stockName == stockSelected.stockName}  && stocks.any {it.stockId == stockSelected.stockId}) {
         productName = stockSelected.stockName.toString()
         productCost = stockSelected.stockSellingPrice.toString()
         totalCost = stockSelected.stockTotalPrice.toString()
+    }
+
+    if(stockSelected!=null) {
+        if (stockSelected!!.stockSellingPrice == null && stockSelected.stockFixedSellingPrice == null && stockSelected.stockPurchasePrice == null && stockSelected.stockTotalPrice == null) {
+            stockSelected.stockSellingPrice = ""
+            stockSelected.stockPurchasePrice = ""
+            stockSelected.stockTotalPrice = ""
+            stockSelected.stockFixedSellingPrice = ""
+        }
     }
 
 
@@ -222,9 +231,17 @@ fun MakeCreditScreen(navController: NavController, viewModel: AuthViewModel){
                     value = if (stockSelected != null) viewModel.stockSelected.value!!.stockSellingPrice.toString() else "",
                     onValueChange =
                     {
-                        viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockSellingPrice = it)
-                        viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockTotalPrice = updateTotalCost(viewModel.stockSelected.value!!.stockSellingPrice!!.toFloat(), quantity.toInt()))
-                        viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockFixedSellingPrice = it)
+                        if (it.isNullOrEmpty() || stockSelected?.stockSellingPrice == null) {
+                            viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockSellingPrice = "")
+                            viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockTotalPrice = "")
+
+                        }
+                        else {
+                            viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockSellingPrice = it)
+                            viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockTotalPrice = updateTotalCost(viewModel.stockSelected.value!!.stockSellingPrice!!.toFloat(), quantity.toInt()))
+                            viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockFixedSellingPrice = it)
+                        }
+
 
                     },
                     label = {

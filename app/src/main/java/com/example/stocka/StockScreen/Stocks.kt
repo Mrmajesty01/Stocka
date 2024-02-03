@@ -16,8 +16,12 @@ import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusState
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
@@ -35,7 +39,8 @@ import com.example.stocka.main.CommonProgressSpinner
 import com.example.stocka.main.navigateTo
 
 
-@OptIn(ExperimentalMaterial3Api::class)
+
+@OptIn(ExperimentalComposeUiApi::class)
 @SuppressLint("UnusedMaterialScaffoldPaddingParameter")
 @Composable
 fun StockScreen(navController: NavController,viewModel: AuthViewModel) {
@@ -47,9 +52,19 @@ fun StockScreen(navController: NavController,viewModel: AuthViewModel) {
     val focus = LocalFocusManager.current
     val totalStockValue = viewModel.totalStockValue.value
 
+
+    var searching by rememberSaveable {
+        mutableStateOf(false)
+    }
+
     var searchValue by remember {
         mutableStateOf("")
     }
+    var isTextFieldActive by rememberSaveable {
+        mutableStateOf(true)
+    }
+
+
 
     Box(modifier = Modifier.fillMaxSize()) {
 
@@ -100,17 +115,26 @@ fun StockScreen(navController: NavController,viewModel: AuthViewModel) {
                     modifier = Modifier
                         .padding(8.dp)
                         .fillMaxWidth()
-                        .border(1.dp, Color.LightGray, CircleShape),
+                        .border(1.dp, Color.LightGray, CircleShape)
+                        .onFocusChanged { focusState: FocusState ->
+                                searching = focusState.isFocused
+                        },
                     shape = CircleShape,
                     keyboardOptions = KeyboardOptions(
                         keyboardType = KeyboardType.Text,
-                        imeAction = ImeAction.Search
+                        imeAction = ImeAction.Search,
                     ),
                     keyboardActions = KeyboardActions(
                         onSearch = {
                             viewModel.stockSearch(searchValue)
                             focus.clearFocus()
-                        }
+                            searching = false
+                        },
+                        onDone = {
+                            focus.clearFocus()
+                            isTextFieldActive = false
+                        },
+
                     ),
                     maxLines = 1,
                     singleLine = true,
@@ -141,9 +165,9 @@ fun StockScreen(navController: NavController,viewModel: AuthViewModel) {
                         }) {
                             Icon(imageVector = Icons.Filled.Search , contentDescription = null )
                         }
-                    }
-
+                    },
                 )
+
 
                 Spacer(modifier = Modifier.padding(5.dp))
                 TotalStockValue(totalStockValue)
@@ -202,7 +226,9 @@ fun StockScreen(navController: NavController,viewModel: AuthViewModel) {
                 }
 
             }
-            BottomNavMenu(selectedItem = BottomNavItem.Stocks, navController = navController)
+            if(!searching || !isTextFieldActive) {
+                BottomNavMenu(selectedItem = BottomNavItem.Stocks, navController = navController)
+            }
         }
         if(searchStockLoading){
             CommonProgressSpinner()

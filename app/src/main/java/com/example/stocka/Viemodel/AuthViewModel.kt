@@ -224,6 +224,10 @@ class AuthViewModel @Inject constructor(
                 val user = it.toObject(User::class.java)
                 userData.value = user
                 inProgress.value = false
+                saleReceiptHolder.value = saleReceiptTotalToday.value
+                creditReceiptHolder.value = creditReceiptTotalToday.value
+                mostBoughtGoodQuantityHolder.value = mostBoughtGoodQuantity.value
+                mostBoughtGoodTodayHolder.value = mostBoughtGoodToday.value
                 retrieveSales()
                 retrieveInvoices()
                 retrieveCustomer()
@@ -359,7 +363,7 @@ class AuthViewModel @Inject constructor(
                 customerAddress = address,
                 customerBalance = balance,
             )
-            checkCustomerExistence(name.toString(), customer, customerId, onSuccess)
+            checkCustomerExistence(name.toString(), customer, customerId, userId, onSuccess)
         }
         else{
             handleException(customMessage = "Error:Failed to add customer")
@@ -368,8 +372,9 @@ class AuthViewModel @Inject constructor(
 
     }
 
-    fun checkCustomerExistence(name: String, customer: Customer, customerId:String, onSuccess: () -> Unit) {
+    fun checkCustomerExistence(name: String, customer: Customer, customerId:String,userId: String, onSuccess: () -> Unit) {
         db.collection(Constants.COLLECTION_NAME_CUSTOMERS)
+            .whereEqualTo("userId",userId)
             .whereEqualTo("customerName", name.trim().toLowerCase())
             .get()
             .addOnSuccessListener { snapshot ->
@@ -469,13 +474,14 @@ class AuthViewModel @Inject constructor(
 
         userId?.let {
             inProgress.value = true
-            checkStockExistence(name,stock,stockHistory,stockId, onSuccess)
+            checkStockExistence(name,stock,stockHistory,stockId,userId, onSuccess)
         }
 
     }
 
-    fun checkStockExistence(name: String, stock: Stock,stockHistory: StockHistory, stockId:String, onSuccess: () -> Unit) {
+    fun checkStockExistence(name: String, stock: Stock,stockHistory: StockHistory, stockId:String,userId: String, onSuccess: () -> Unit) {
         db.collection(Constants.COLLECTION_NAME_STOCKS)
+            .whereEqualTo("userId",userId)
             .whereEqualTo("stockName", name.trim().toLowerCase())
             .get()
             .addOnSuccessListener { snapshot ->
@@ -2245,49 +2251,19 @@ class AuthViewModel @Inject constructor(
 
     }
 
-    fun editStock(stock: Stock, productName:String, purchasePrice: String, sellingPrice: String, qtySold:String, qtyRemain:String, expiryDate: String, newQty:String,oneMonthToExpire:String, twoWeeksToExpires:String, oneWeekToExpire:String, onSuccess: () -> Unit){
+    fun updateStock(stock: Stock, productName:String, purchasePrice: String, sellingPrice: String, qtySold:String, qtyRemain:String, expiryDate: String ,oneMonthToExpire:String, twoWeeksToExpires:String, oneWeekToExpire:String, onSuccess: () -> Unit){
            inProgress.value = true
            var updatedQuantity = qtyRemain
             db.collection(Constants.COLLECTION_NAME_STOCKS).document(stock.stockId.toString()).get()
                 .addOnSuccessListener {
 
-                    if(newQty.toInt()>0){
-                        updatedQuantity =  (qtyRemain.toInt() + newQty.toInt()).toString()
-                        val randomUid = UUID.randomUUID()
-                        val stockHistory = StockHistory(
-                            stockId = stock.stockId,
-                            userId = stock.userId,
-                            stockName = productName,
-                            stockPurchasePrice = purchasePrice,
-                            stockSellingPrice = sellingPrice,
-                            stockQuantityAdded = newQty,
-                            stockDateAdded = System.currentTimeMillis(),
-                            stockExpiryDate = expiryDate,
-                            stockOneMonthToExpire = oneMonthToExpire,
-                            stockTwoWeeksToExpire = twoWeeksToExpires,
-                            stockOneWeekToExpire = oneWeekToExpire
-
-                        )
-
-                        db.collection(Constants.COLLECTION_NAME_STOCKHISTORY).document(randomUid.toString()).set(stockHistory).addOnSuccessListener {
-                            popupNotification.value = Event("Stock added successfully")
-                            retrieveStocks()
-                            getTotalStockValue()
-                            getTotalSaleReceiptToday()
-                            getTotalCreditReceiptToday()
-                            getMostPurchasedProductsToday()
-                            onSuccess.invoke()
-                        }
-                            .addOnFailureListener {exc->
-                                handleException(exc, "failed to generate stock history")
-                            }
-                    }
-
-
                     val update = mapOf(
                         "stockName" to productName,
                         "stockPurchasePrice" to purchasePrice,
                         "stockSellingPrice" to sellingPrice,
+                        "stockSellingPrice" to sellingPrice,
+                        "stockFixedSellingPrice" to sellingPrice,
+                        "stockTotalPrice" to sellingPrice,
                         "stockQuantity" to updatedQuantity,
                         "stockQuantitySold" to qtySold,
                         "stockExpiryDate" to expiryDate
@@ -2320,6 +2296,75 @@ class AuthViewModel @Inject constructor(
                     inProgress.value = false
                     handleException(exc, "failed to retrieve stock for update")
                 }
+    }
+
+    fun addToStock(stock: Stock, productName:String, purchasePrice: String, sellingPrice: String, qtyRemain:String, expiryDate: String, newQty:String,oneMonthToExpire:String, twoWeeksToExpires:String, oneWeekToExpire:String, onSuccess: () -> Unit){
+        inProgress.value = true
+        db.collection(Constants.COLLECTION_NAME_STOCKS).document(stock.stockId.toString()).get()
+            .addOnSuccessListener {
+
+                    val update = mapOf(
+                        "stockName" to productName,
+                        "stockPurchasePrice" to if(newQty.toInt()>0) purchasePrice else stock.stockPurchasePrice.toString(),
+                        "stockSellingPrice" to if(newQty.toInt()>0) sellingPrice else stock.stockSellingPrice.toString(),
+                        "stockFixedSellingPrice" to if(newQty.toInt()>0) sellingPrice else stock.stockSellingPrice.toString(),
+                        "stockTotalPrice" to if(newQty.toInt()>0) sellingPrice else stock.stockSellingPrice.toString(),
+                        "stockQuantity" to if(newQty.toInt()>0) (qtyRemain.toInt() + newQty.toInt()).toString() else qtyRemain,
+                        "stockQuantitySold" to stock.stockQuantitySold.toString(),
+                        "stockExpiryDate" to if(newQty.toInt()>0) expiryDate else stock.stockExpiryDate.toString()
+                    )
+
+
+                    //implement later
+//                    val stockHistoryUpdate = mapOf(
+//                        "stockExpiryDate" to expiryDate,
+//                        "stockOneMonthToExpire" to oneMonthToExpire,
+//                        "stockTwoWeeksToExpire" to twoWeeksToExpires,
+//                        "stockOneWeekToExpire" to oneWeekToExpire
+//                    )
+
+                    db.collection(Constants.COLLECTION_NAME_STOCKS)
+                        .document(stock.stockId.toString()).update(update)
+                        .addOnSuccessListener {
+
+                            if(newQty.toInt()>0){
+                                val updatedQuantity =  (qtyRemain.toInt() + newQty.toInt()).toString()
+                                val randomUid = UUID.randomUUID()
+                                val stockHistory = StockHistory(
+                                    stockId = stock.stockId,
+                                    userId = stock.userId,
+                                    stockName = productName,
+                                    stockPurchasePrice = purchasePrice,
+                                    stockSellingPrice = sellingPrice,
+                                    stockQuantityAdded = updatedQuantity,
+                                    stockDateAdded = System.currentTimeMillis(),
+                                    stockExpiryDate = expiryDate,
+                                    stockOneMonthToExpire = oneMonthToExpire,
+                                    stockTwoWeeksToExpire = twoWeeksToExpires,
+                                    stockOneWeekToExpire = oneWeekToExpire
+
+                                )
+
+                                db.collection(Constants.COLLECTION_NAME_STOCKHISTORY).document(randomUid.toString()).set(stockHistory).addOnSuccessListener {
+                                    popupNotification.value = Event("Stock added successfully")
+                                    retrieveStocks()
+                                    getTotalStockValue()
+                                    getTotalSaleReceiptToday()
+                                    getTotalCreditReceiptToday()
+                                    getMostPurchasedProductsToday()
+                                    inProgress.value = false
+                                    onSuccess.invoke()
+                                }
+                                    .addOnFailureListener {exc->
+                                        handleException(exc, "failed to generate stock history")
+                                    }
+                            }
+                        }
+                        .addOnFailureListener { exc ->
+                            inProgress.value = false
+                            handleException(exc, "Failed to update stock")
+                        }
+                    }
     }
 
 
@@ -2534,7 +2579,6 @@ class AuthViewModel @Inject constructor(
 
     fun getTotalSaleReceiptToday() {
 
-        saleReceiptHolder.value = saleReceiptTotalToday.value
         val userId = auth.currentUser?.uid
 
         val date = System.currentTimeMillis()
@@ -2571,7 +2615,6 @@ class AuthViewModel @Inject constructor(
 
     fun getTotalCreditReceiptToday() {
 
-        creditReceiptHolder.value = creditReceiptTotalToday.value
         val userId = auth.currentUser?.uid
 
         val date = System.currentTimeMillis()
@@ -2610,8 +2653,6 @@ class AuthViewModel @Inject constructor(
 
     fun getMostPurchasedProductsToday() {
 
-        mostBoughtGoodTodayHolder.value = mostBoughtGoodToday.value
-        mostBoughtGoodQuantityHolder.value = mostBoughtGoodQuantity.value
         val userId = auth.currentUser?.uid
 
         val date = System.currentTimeMillis()
@@ -2638,7 +2679,8 @@ class AuthViewModel @Inject constructor(
                         val quantity = singleSale.quantity?.toInt() ?: 0
 
                         // Update quantity for the product in the map
-                        productQuantityMap[productName.toString()] = productQuantityMap.getOrDefault(productName, 0) + quantity
+                        val currentQuantity = productQuantityMap.getOrDefault(productName, 0)
+                        productQuantityMap[productName.toString()] = currentQuantity + quantity
                     }
                 }
 

@@ -15,12 +15,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.stocka.HomeScreen.formatNumberWithDelimiter
 
 @Composable
 fun TotalStockValue(
     amount: Double
 ){
 
+
+    val totalValue = amount
+    val formattedAmount = formatNumberWithDelimiter(totalValue)
     Card(
         elevation = 5.dp,
         modifier = Modifier.fillMaxWidth()
@@ -43,7 +47,7 @@ fun TotalStockValue(
             )
 
             Text(
-                text = amount.toString(),
+                text = formattedAmount,
                 modifier = Modifier.align(Alignment.BottomCenter),
                 fontWeight = FontWeight.Bold,
                 fontSize = 18.sp

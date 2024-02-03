@@ -200,9 +200,16 @@ fun EditSalesScreen(navController: NavController, viewModel: AuthViewModel) {
                 OutlinedTextField(
                     value = viewModel.singleSaleSelected.value?.price.toString(),
                     onValueChange =
-                    {newValue->
-                        viewModel.singleSaleSelected.value = viewModel.singleSaleSelected.value?.copy(price = newValue)
-                        viewModel.singleSaleSelected.value = viewModel.singleSaleSelected.value?.copy(totalPrice = updateTotalCost(viewModel.singleSaleSelected.value?.price!!.toFloat(), viewModel.singleSaleSelected.value?.quantity!!.toInt()))
+                    {
+                        if (it.isNullOrEmpty() || single == null) {
+                            viewModel.singleSaleSelected.value = viewModel.singleSaleSelected.value?.copy(price = "")
+                            viewModel.singleSaleSelected.value = viewModel.singleSaleSelected.value?.copy(totalPrice = "")
+//
+                        }
+                        else {
+                            viewModel.singleSaleSelected.value = viewModel.singleSaleSelected.value?.copy(price = it)
+                            viewModel.singleSaleSelected.value = viewModel.singleSaleSelected.value?.copy(totalPrice = updateTotalCost(viewModel.singleSaleSelected.value?.price!!.toFloat(), viewModel.singleSaleSelected.value?.quantity!!.toInt()))
+                        }
 
                     },
                     label = {
@@ -252,9 +259,7 @@ fun EditSalesScreen(navController: NavController, viewModel: AuthViewModel) {
                             if (newQty.isNotEmpty()) {
                                 val newValue = newQty.toInt()
                                 viewModel.singleSaleSelected.value = viewModel.singleSaleSelected.value!!.copy(quantity =  if (newValue >= 0) newValue.toString() else "1")
-//                                viewModel.singleSaleSelected.value = viewModel.singleSaleSelected.value?.copy(quantity = newQty)
-                                viewModel.singleSaleSelected.value =
-                                    viewModel.singleSaleSelected.value?.copy(totalPrice = updateTotalCost(viewModel.singleSaleSelected.value?.price!!.toFloat(), viewModel.singleSaleSelected.value?.quantity!!.toInt()))
+                                viewModel.singleSaleSelected.value = viewModel.singleSaleSelected.value?.copy(totalPrice = updateTotalCost(viewModel.singleSaleSelected.value?.price!!.toFloat(), viewModel.singleSaleSelected.value?.quantity!!.toInt()))
                             } else {
                                 val qty = "1"
                                 viewModel.singleSaleSelected.value = viewModel.singleSaleSelected.value?.copy(quantity = qty)

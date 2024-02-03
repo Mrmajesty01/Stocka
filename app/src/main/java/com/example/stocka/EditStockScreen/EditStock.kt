@@ -10,10 +10,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBackIos
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Remove
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -318,62 +316,37 @@ fun EditStockInfoScreen(navController: NavController, viewModel: AuthViewModel) 
                     enabled = !isLoading
                 )
 
-                Spacer(modifier = Modifier.padding(20.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceAround,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Add Stock",
-                    )
-
-                    Icon(
-                        imageVector = Icons.Default.Remove,
-                        contentDescription = "removeIcon",
-                        modifier = Modifier.clickable {
-                            if (!isLoading) {
-                                var count = addQuantity.toInt()
-                                count--
-                                addQuantity = count.toString()
-                            }
-                        }
-                    )
-
-                    OutlinedTextField(
-                        modifier = Modifier
-                            .width(80.dp)
-                            .height(50.dp),
-                        value = addQuantity,
-                        onValueChange = {
-                            addQuantity = it
-                        },
-                        textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        enabled = !isLoading
-                    )
-
-                    Icon(
-                        imageVector = Icons.Default.Add,
-                        contentDescription = "addIcon",
-                        modifier = Modifier.clickable {
-                            if (!isLoading) {
-                                var count = addQuantity.toInt()
-                                count++
-                                addQuantity = count.toString()
-                            }
-                        }
-                    )
-
-                }
 
                 Spacer(modifier = Modifier.padding(20.dp))
 
                 Button(
                     onClick = {
                         if (!isLoading) {
-                            viewModel.editStock(
+                                viewModel.getStock(stock!!)
+                                navController.navigate(Destination.AddToStock.routes)
+                        }
+                    },
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier
+                        .fillMaxWidth(0.7f)
+                        .height(50.dp)
+                        .align(Alignment.CenterHorizontally),
+                    colors = ButtonDefaults.buttonColors(ListOfColors.orange)
+
+
+                ) {
+                    Text(
+                        text = "Add To Stock",
+                        color = ListOfColors.black
+                    )
+                }
+
+                Spacer(modifier = Modifier.padding(10.dp))
+
+                Button(
+                    onClick = {
+                        if (!isLoading) {
+                            viewModel.updateStock(
                                 stock!!,
                                 viewModel.stockSelected.value!!.stockName.toString(),
                                 viewModel.stockSelected.value!!.stockPurchasePrice.toString(),
@@ -381,7 +354,6 @@ fun EditStockInfoScreen(navController: NavController, viewModel: AuthViewModel) 
                                 viewModel.stockSelected.value!!.stockQuantitySold.toString(),
                                 viewModel.stockSelected.value!!.stockQuantity.toString(),
                                 viewModel.stockSelected.value!!.stockExpiryDate.toString(),
-                                addQuantity,
                                 oneMonthToExpiry.toString(),
                                 twoWeeksToExpiry.toString(),
                                 oneWeekToExpiry.toString()
