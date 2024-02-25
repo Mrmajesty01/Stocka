@@ -1,7 +1,9 @@
 package com.example.stocka.MakeCreditScreen
 
 import android.annotation.SuppressLint
+import android.os.Build
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -47,6 +49,7 @@ internal data class MakeSale(
         }
     }
 }
+@RequiresApi(Build.VERSION_CODES.O)
 @SuppressLint("UnusedMaterialScaffoldPaddingParameter")
 @Composable
 fun MakeCreditScreen(navController: NavController, viewModel: AuthViewModel){
@@ -76,6 +79,10 @@ fun MakeCreditScreen(navController: NavController, viewModel: AuthViewModel){
         mutableStateOf("")
     }
 
+    var exist by rememberSaveable {
+        mutableStateOf(false)
+    }
+
     var productCost by rememberSaveable{
         mutableStateOf("")
     }
@@ -91,6 +98,7 @@ fun MakeCreditScreen(navController: NavController, viewModel: AuthViewModel){
         productName = stockSelected.stockName.toString()
         productCost = stockSelected.stockSellingPrice.toString()
         totalCost = stockSelected.stockTotalPrice.toString()
+        exist = true
     }
 
     if(stockSelected!=null) {
@@ -99,7 +107,20 @@ fun MakeCreditScreen(navController: NavController, viewModel: AuthViewModel){
             stockSelected.stockPurchasePrice = ""
             stockSelected.stockTotalPrice = ""
             stockSelected.stockFixedSellingPrice = ""
+            exist = true
         }
+    }
+
+
+    if(stockSelected != null && !stocks.any {it.stockName == stockSelected.stockName}  && !stocks.any {it.stockId == stockSelected.stockId}) {
+        productName = stockSelected.stockName
+        productCost = stockSelected.stockSellingPrice
+        viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockPurchasePrice = productCost)
+        viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockSellingPrice = productCost)
+        viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockFixedSellingPrice = productCost)
+        viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockQuantity = quantity)
+        totalCost = stockSelected.stockTotalPrice
+        exist = false
     }
 
 
@@ -192,8 +213,9 @@ fun MakeCreditScreen(navController: NavController, viewModel: AuthViewModel){
                 {
 
                     OutlinedTextField(
-                        value = if (stockSelected != null) viewModel.stockSelected.value!!.stockName.toString() else "",
+                        value = if (stockSelected != null) viewModel.stockSelected.value!!.stockName else "",
                         onValueChange = {
+                            viewModel.stockSelected.value = Stock()
                             viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockName = it)
                         },
                         label = {
@@ -202,7 +224,7 @@ fun MakeCreditScreen(navController: NavController, viewModel: AuthViewModel){
                             )
                         },
                         modifier = Modifier.align(Alignment.Center),
-                        enabled = false
+
                     )
 
                     Icon(
@@ -427,7 +449,8 @@ fun MakeCreditScreen(navController: NavController, viewModel: AuthViewModel){
                                         quantity = quantity,
                                         price = productCost,
                                         totalPrice = totalCost,
-                                        profit = profit.toString()
+                                        profit = profit.toString(),
+                                        exist = exist
                                     )
                                 if (sales.isNotEmpty() && sales.last().isFull()) {
                                     Toast.makeText(
@@ -554,7 +577,8 @@ fun MakeCreditScreen(navController: NavController, viewModel: AuthViewModel){
                                             quantity = quantity,
                                             price = viewModel.stockSelected.value!!.stockFixedSellingPrice.toString(),
                                             totalPrice = viewModel.stockSelected.value!!.stockTotalPrice.toString(),
-                                            profit = profit.toString()
+                                            profit = profit.toString(),
+                                            exist = exist
                                         )
                                     sales.last().add(sale)
                                 }
@@ -578,7 +602,8 @@ fun MakeCreditScreen(navController: NavController, viewModel: AuthViewModel){
                                         .sumByDouble { it.quantity?.toDoubleOrNull() ?: 0.0 }
                                         .toString(),
                                     customer = customer!!,
-                                    stockQuantityList = stockToUpdate
+                                    stockQuantityList = stockToUpdate,
+                                    exist = exist
                                 ) {
                                     viewModel.stockSelected.value = null
                                     sales = emptyList()
@@ -612,7 +637,8 @@ fun MakeCreditScreen(navController: NavController, viewModel: AuthViewModel){
                                         .sumByDouble { it.quantity?.toDoubleOrNull() ?: 0.0 }
                                         .toString(),
                                     customer = customer!!,
-                                    stockQuantityList = stockToUpdate
+                                    stockQuantityList = stockToUpdate,
+                                    exist = exist
                                 ) {
                                     viewModel.stockSelected.value = null
                                     sales = emptyList()
@@ -639,7 +665,8 @@ fun MakeCreditScreen(navController: NavController, viewModel: AuthViewModel){
                                             quantity = quantity,
                                             price = viewModel.stockSelected.value!!.stockFixedSellingPrice.toString(),
                                             totalPrice = viewModel.stockSelected.value!!.stockTotalPrice.toString(),
-                                            profit = profit.toString()
+                                            profit = profit.toString(),
+                                            exist = exist
                                         )
                                     sales = listOf(MakeSale(listOf(sale)))
                                 }
@@ -663,7 +690,8 @@ fun MakeCreditScreen(navController: NavController, viewModel: AuthViewModel){
                                         .sumByDouble { it.quantity?.toDoubleOrNull() ?: 0.0 }
                                         .toString(),
                                     customer = customer!!,
-                                    stockQuantityList = stockToUpdate
+                                    stockQuantityList = stockToUpdate,
+                                    exist = exist
                                 ) {
                                     viewModel.stockSelected.value = null
                                     sales = emptyList()

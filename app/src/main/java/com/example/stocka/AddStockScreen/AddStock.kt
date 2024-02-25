@@ -7,8 +7,10 @@ import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -126,12 +128,10 @@ fun AddStockScreen(navController: NavController,viewModel: AuthViewModel) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
 
                 Row(
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
                         .padding(top = 10.dp),
                     verticalAlignment = Alignment.CenterVertically
 
@@ -139,7 +139,8 @@ fun AddStockScreen(navController: NavController,viewModel: AuthViewModel) {
                     Icon(
                         imageVector = Icons.Default.ArrowBackIos,
                         contentDescription = "BackIcon",
-                        modifier = Modifier.padding(start = 5.dp)
+                        modifier = Modifier
+                            .padding(start = 5.dp)
                             .size(15.dp)
                             .clickable {
                                 if (!isLoading) {
@@ -163,6 +164,12 @@ fun AddStockScreen(navController: NavController,viewModel: AuthViewModel) {
                 Divider(thickness = 1.dp, color = ListOfColors.lightGrey)
 
                 Spacer(modifier = Modifier.padding(15.dp))
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+            ) {
 
                 OutlinedTextField(
                     modifier = Modifier.align(Alignment.CenterHorizontally),
@@ -251,7 +258,8 @@ fun AddStockScreen(navController: NavController,viewModel: AuthViewModel) {
                 Spacer(modifier = Modifier.padding(20.dp))
 
                 Row(
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
                         .height(70.dp),
                     horizontalArrangement = Arrangement.SpaceAround,
                     verticalAlignment = Alignment.CenterVertically
@@ -364,7 +372,8 @@ fun AddStockScreen(navController: NavController,viewModel: AuthViewModel) {
         }
         if (isLoading) {
             CircularProgressIndicator(
-                modifier = Modifier.size(50.dp)
+                modifier = Modifier
+                    .size(50.dp)
                     .align(Alignment.Center)
             )
         }

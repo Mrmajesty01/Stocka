@@ -16,8 +16,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.Divider
@@ -83,6 +85,11 @@ fun AddToStockScreen(navController: NavController, viewModel:AuthViewModel) {
         mutableStateOf("")
     }
 
+    if(stock!=null){
+        purchasePrice = viewModel.stockSelected.value!!.stockPurchasePrice.toString()
+        sellingPrice = viewModel.stockSelected.value!!.stockSellingPrice.toString()
+    }
+
     var datePicked by remember {
         mutableStateOf(LocalDate.now().plusMonths(3))
     }
@@ -115,6 +122,7 @@ fun AddToStockScreen(navController: NavController, viewModel:AuthViewModel) {
     Box(
         modifier = Modifier
             .fillMaxSize()
+
     ) {
 
         if (isLoading) {
@@ -172,7 +180,8 @@ fun AddToStockScreen(navController: NavController, viewModel:AuthViewModel) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(top = 20.dp),
+                    .padding(all = 20.dp)
+                    .verticalScroll(rememberScrollState()),
             ) {
 
                 OutlinedTextField(
@@ -202,7 +211,7 @@ fun AddToStockScreen(navController: NavController, viewModel:AuthViewModel) {
                         modifier = Modifier.width(150.dp),
                         value = purchasePrice,
                         onValueChange = {
-                            purchasePrice = it
+                            viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockPurchasePrice = it)
                         },
                         placeholder = {
                             Text(
@@ -227,7 +236,7 @@ fun AddToStockScreen(navController: NavController, viewModel:AuthViewModel) {
                         modifier = Modifier.width(150.dp),
                         value = sellingPrice,
                         onValueChange = {
-                            sellingPrice = it
+                           viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockSellingPrice = it)
                         },
                         placeholder = {
                             Text(
@@ -329,18 +338,42 @@ fun AddToStockScreen(navController: NavController, viewModel:AuthViewModel) {
                 Button(
                     onClick = {
                         if (!isLoading) {
+
+                            if(!addQuantity.isInt()){
+                                // Show a toast message indicating that the count is not an integer
+                                Toast.makeText(
+                                    context,
+                                    "invalid value for stock quantity",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                                return@Button
+                            }
+
+                            if (sellingPrice.toDouble() < purchasePrice.toDouble()) {
+                                Toast.makeText(
+                                    context,
+                                    "stock purchase price can't be greater than selling price",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                                return@Button
+                            }
+
                             if(purchasePrice.isEmpty()){
                                 Toast.makeText(context,"add purchase price to add stock",Toast.LENGTH_LONG).show()
                                 return@Button
                             }
+
                             if(sellingPrice.isEmpty()){
                                 Toast.makeText(context,"add selling price to add stock",Toast.LENGTH_LONG).show()
                                 return@Button
                             }
-                            if(addQuantity.isEmpty()){
+
+                            if(addQuantity.isEmpty() || addQuantity.toInt()<=0){
                                 Toast.makeText(context,"add the quantity to add to stock",Toast.LENGTH_LONG).show()
                                 return@Button
                             }
+
+
                             viewModel.addToStock(
                                 stock!!,
                                 viewModel.stockSelected.value!!.stockName.toString(),
@@ -354,7 +387,7 @@ fun AddToStockScreen(navController: NavController, viewModel:AuthViewModel) {
                                 oneWeekToExpiry.toString()
                             ) {
                                 viewModel.getStock(stock)
-                                navController.navigate(Destination.EditStock.routes)
+                                navController.navigate(Destination.StockInfo.routes)
                             }
                         }
                     },
@@ -375,6 +408,15 @@ fun AddToStockScreen(navController: NavController, viewModel:AuthViewModel) {
 
             }
         }
+    }
+}
+
+private fun String.isInt(): Boolean {
+    return try {
+        this.toInt()
+        true
+    } catch (e: NumberFormatException) {
+        false
     }
 }
 

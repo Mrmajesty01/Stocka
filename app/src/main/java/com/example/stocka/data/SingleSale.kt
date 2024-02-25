@@ -11,7 +11,8 @@ data class SingleSale(
     var quantity:String? = null,
     var price:String? = null,
     var totalPrice:String? = null,
-    var profit:String? = null
+    var profit:String? = null,
+    var exist:Boolean = false
 ):Parcelable {
     constructor(parcel: Parcel) : this(
         parcel.readString(),

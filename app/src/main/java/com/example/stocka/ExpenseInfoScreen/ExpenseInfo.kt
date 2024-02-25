@@ -28,6 +28,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.stocka.HomeScreen.formatNumberWithDelimiter
 import com.example.stocka.Navigation.Destination
 import com.example.stocka.Viemodel.AuthViewModel
 import com.example.stocka.ui.theme.ListOfColors
@@ -43,6 +44,9 @@ fun ExpenseInfoScreen(navController: NavController, viewModel:AuthViewModel) {
     val formattedDate = expense?.expenseDate?.let {
         SimpleDateFormat("dd MMM yyyy").format(Date(it))
     } ?: ""
+
+    val expenseAmount = expense?.expenseAmount?.toDoubleOrNull() ?: 0.0
+    val formattedExpenseAmount = formatNumberWithDelimiter(expenseAmount)
 
     var openDialog by rememberSaveable {
         mutableStateOf(false)
@@ -196,7 +200,7 @@ fun ExpenseInfoScreen(navController: NavController, viewModel:AuthViewModel) {
                     )
 
                     Text(
-                        text = expense?.expenseAmount.toString(),
+                        text = formattedExpenseAmount,
                         modifier = Modifier.align(Alignment.BottomEnd)
                     )
                 }

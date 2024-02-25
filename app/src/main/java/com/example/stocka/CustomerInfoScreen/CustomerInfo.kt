@@ -26,6 +26,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.stocka.HomeScreen.formatNumberWithDelimiter
 import com.example.stocka.Navigation.Destination
 import com.example.stocka.Viemodel.AuthViewModel
 import com.example.stocka.ui.theme.ListOfColors
@@ -46,6 +47,11 @@ fun CustomerInfoScreen(
     var pin by remember { mutableStateOf(TextFieldValue()) }
     val userData = viewModel.userData.value
     val context = LocalContext.current
+
+    var customerBalance = customer?.customerBalance?.toDoubleOrNull() ?: 0.0
+
+    var formattedCustomerBalance = formatNumberWithDelimiter(customerBalance)
+
 
     Box(
         modifier = Modifier.fillMaxWidth()
@@ -242,7 +248,7 @@ fun CustomerInfoScreen(
                 )
 
                 Text(
-                    text = customer?.customerBalance.toString(),
+                    text = formattedCustomerBalance,
                     fontSize = 15.sp,
                     modifier = Modifier.align(Alignment.BottomEnd)
                 )
@@ -307,6 +313,7 @@ fun CustomerInfoScreen(
                 Button(
                     onClick = {
                         if (!isLoading || !isLoadingDelete) {
+                            viewModel.stockSelected.value = null
                             navController.navigate(Destination.MakeCredit.routes)
                             viewModel.onCustomerSelected(customer!!)
                         }
@@ -342,7 +349,8 @@ fun CustomerInfoScreen(
 
                 ) {
                     Text(
-                        text = "Edit",
+                        text = "Edit Customer",
+                        textAlign = TextAlign.Center,
                         color = ListOfColors.black
                     )
                 }
@@ -367,7 +375,7 @@ fun CustomerInfoScreen(
 
             ) {
                 Text(
-                    text = "Delete",
+                    text = "Delete Customer",
                     color = ListOfColors.black
                 )
             }

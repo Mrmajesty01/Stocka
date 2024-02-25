@@ -10,8 +10,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -85,15 +83,15 @@ fun navigateTo(navController: NavController,dest:Destination, vararg params: Nav
 
 }
 
-@Composable
-fun CheckSignedIn(navController: NavController, viewModel:AuthViewModel){
-    val alreadySignedIn = remember { mutableStateOf(false) }
-    val signedIn = viewModel.signedIn.value
-    if(signedIn && !alreadySignedIn.value){
-        alreadySignedIn.value = true
-        navController.navigate(Destination.Home.routes){
-            popUpTo(0)
-        }
-    }
-
-}
+//@Composable
+//fun CheckSignedIn(navController: NavController, viewModel:AuthViewModel){
+//    val alreadySignedIn = remember { mutableStateOf(false) }
+//    val signedIn = viewModel.signedIn.value
+//    if(signedIn && !alreadySignedIn.value){
+//        alreadySignedIn.value = true
+//        navController.navigate(Destination.Home.routes){
+//            popUpTo(0)
+//        }
+//    }
+//
+//}

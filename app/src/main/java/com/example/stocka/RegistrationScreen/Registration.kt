@@ -1,12 +1,26 @@
 package com.example.stocka.RegistrationScreen
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.*
+import androidx.compose.material.Button
+import androidx.compose.material.ButtonDefaults
+import androidx.compose.material.Icon
+import androidx.compose.material.OutlinedTextField
+import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.AddBusiness
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Password
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.RemoveRedEye
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -29,7 +43,6 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.stocka.Navigation.Destination
 import com.example.stocka.Viemodel.AuthViewModel
-import com.example.stocka.main.CheckSignedIn
 import com.example.stocka.main.CommonProgressSpinner
 import com.example.stocka.main.navigateTo
 import com.example.stocka.ui.theme.ListOfColors
@@ -38,7 +51,7 @@ import com.example.stocka.ui.theme.ListOfColors
 @Composable
 fun RegistrationScreen(navController: NavHostController, viewModel:AuthViewModel){
 
-    CheckSignedIn(navController = navController, viewModel = viewModel)
+//    CheckSignedIn(navController = navController, viewModel = viewModel)
     val focus = LocalFocusManager.current
 
     Box(modifier = Modifier.fillMaxSize()){
@@ -226,7 +239,9 @@ fun RegistrationScreen(navController: NavHostController, viewModel:AuthViewModel
             Button(
                 onClick = {
                     focus.clearFocus(force=true)
-                    viewModel.onSignUp(fullName, businessName, email, password, confirmPassword)
+                    viewModel.onSignUp(fullName, businessName, email, password, confirmPassword){
+                        navController.navigate(Destination.Home.routes)
+                    }
                 },
                 shape = RoundedCornerShape(10.dp),
                 modifier = Modifier

@@ -1,8 +1,8 @@
 package com.example.stocka.data
 
 data class DailyReport(
-
-    val date:String? = null,
+    val date:Long? = null,
+    val userId:String? = null,
     val totalSalesToday:String? = null,
     val totalProfitToday:String? = null,
     val salesReceiptTotal:String? = null,
@@ -11,6 +11,4 @@ data class DailyReport(
     val profitAfterExpense:String? = null,
     val mostSoldGood:String? = null,
     val mostSoldGoodQty:String? = null
-
-
 )

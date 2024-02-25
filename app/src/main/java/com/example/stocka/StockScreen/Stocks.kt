@@ -7,6 +7,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -51,6 +52,7 @@ fun StockScreen(navController: NavController,viewModel: AuthViewModel) {
     val stocks = viewModel.stocks.value
     val focus = LocalFocusManager.current
     val totalStockValue = viewModel.totalStockValue.value
+    val lazyListState = rememberLazyListState()
 
 
     var searching by rememberSaveable {
@@ -197,7 +199,8 @@ fun StockScreen(navController: NavController,viewModel: AuthViewModel) {
                                 modifier = Modifier
                                     .wrapContentHeight()
                                     .fillMaxSize(),
-                                verticalArrangement = Arrangement.spacedBy(7.dp)
+                                verticalArrangement = Arrangement.spacedBy(7.dp),
+                                state = lazyListState
                             ) {
                                 items(stocks) { stock ->
                                     StockItem(stock = stock) { go ->
@@ -213,7 +216,8 @@ fun StockScreen(navController: NavController,viewModel: AuthViewModel) {
                             modifier = Modifier
                                 .wrapContentHeight()
                                 .fillMaxSize(),
-                            verticalArrangement = Arrangement.spacedBy(7.dp)
+                            verticalArrangement = Arrangement.spacedBy(7.dp),
+                            state = lazyListState
                         ) {
                             items(searchedStock) { stock ->
                                 StockItem(stock = stock){go->

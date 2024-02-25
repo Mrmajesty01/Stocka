@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.example.stocka.HomeScreen.formatNumberWithDelimiter
 import com.example.stocka.Viemodel.AuthViewModel
 import com.example.stocka.data.SingleSale
 import com.example.stocka.ui.theme.ListOfColors
@@ -31,6 +32,12 @@ fun SalesItemsDetails(
     val isLoading = viewModel.getSaleProgress.value
 
     val isLoadingCustomer = viewModel.customerProgress.value
+
+    val price = sales.price?.toDoubleOrNull() ?: 0.0
+    val formattedPrice = formatNumberWithDelimiter(price)
+
+    val totalPrice = sales.totalPrice?.toDoubleOrNull() ?: 0.0
+    val formattedTotalPrice = formatNumberWithDelimiter(totalPrice)
 
     Card(
         elevation = 5.dp,
@@ -61,11 +68,11 @@ fun SalesItemsDetails(
             )
 
             Text(
-                text = sales.price.toString(),
+                text = formattedPrice,
             )
 
             Text(
-                text = sales.totalPrice.toString(),
+                text = formattedTotalPrice,
                 modifier = Modifier.padding(end = 5.dp)
             )
 

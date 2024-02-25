@@ -245,7 +245,7 @@ fun AddExpenseScreen(navController: NavController, viewModel: AuthViewModel){
                         if (!isLoading) {
                             if (expenseName.isNotEmpty() && expenseAmount.isNotEmpty() && expenseCategory.isNotEmpty()) {
                                 viewModel.AddExpense(
-                                    name = expenseName,
+                                    name = expenseName.toLowerCase(),
                                     description = expenseDescription,
                                     category = expenseCategory,
                                     amount = expenseAmount

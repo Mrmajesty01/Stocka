@@ -5,6 +5,7 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
@@ -48,7 +49,7 @@ fun HomeScreen(navController: NavController, viewModel: AuthViewModel) {
     var sales = viewModel.salesHomeData.value
     var expenses = viewModel.expenseHomeData.value
     val businessName = if (userData?.businessName == null) "" else userData.businessName
-
+    val lazyListState = rememberLazyListState()
 
     val totalSales = userData?.totalSales?.toDoubleOrNull() ?: 0.0
     val totalExpenses = userData?.totalExpenses?.toDoubleOrNull() ?: 0.0
@@ -128,7 +129,12 @@ fun HomeScreen(navController: NavController, viewModel: AuthViewModel) {
                         .height(150.dp)
                         .fillMaxWidth()
                         .clickable {
-                            navController.navigate(Destination.DailyReport.routes)
+                            if (!isLoading) {
+                                viewModel.getTotalSaleReceiptToday()
+                                viewModel.getTotalCreditReceiptToday()
+                                viewModel.getMostPurchasedProductsToday()
+                                navController.navigate(Destination.DailyReport.routes)
+                            }
                         }
                         .align(Alignment.CenterHorizontally),
                     shape = RoundedCornerShape(15.dp)
@@ -312,7 +318,9 @@ fun HomeScreen(navController: NavController, viewModel: AuthViewModel) {
                                     modifier = Modifier
                                         .weight(1f)
                                         .clickable {
-                                            navController.navigate(Destination.Invoices.routes)
+                                            if (!isLoading) {
+                                                navController.navigate(Destination.Invoices.routes)
+                                            }
                                         },
                                     textAlign = TextAlign.End,
                                 )
@@ -341,7 +349,9 @@ fun HomeScreen(navController: NavController, viewModel: AuthViewModel) {
                                     modifier = Modifier
                                         .weight(1f)
                                         .clickable {
-                                            navController.navigate(Destination.ExpenseScreen.routes)
+                                            if (!isLoading) {
+                                                navController.navigate(Destination.ExpenseScreen.routes)
+                                            }
                                         },
                                     textAlign = TextAlign.End,
                                 )
@@ -370,7 +380,9 @@ fun HomeScreen(navController: NavController, viewModel: AuthViewModel) {
                                     modifier = Modifier
                                         .weight(1f)
                                         .clickable {
-                                            navController.navigate(Destination.Invoices.routes)
+                                            if (!isLoading) {
+                                                navController.navigate(Destination.Invoices.routes)
+                                            }
                                         },
                                     textAlign = TextAlign.End,
                                 )
@@ -406,7 +418,8 @@ fun HomeScreen(navController: NavController, viewModel: AuthViewModel) {
                                         modifier = Modifier
                                             .wrapContentHeight()
                                             .fillMaxSize(),
-                                        verticalArrangement = Arrangement.spacedBy(7.dp)
+                                        verticalArrangement = Arrangement.spacedBy(7.dp),
+                                        state = lazyListState
                                     ) {
                                         items(sales) {
                                             CustomerSalesItem(sales = it) {
@@ -448,7 +461,8 @@ fun HomeScreen(navController: NavController, viewModel: AuthViewModel) {
                                         modifier = Modifier
                                             .wrapContentHeight()
                                             .fillMaxSize(),
-                                        verticalArrangement = Arrangement.spacedBy(7.dp)
+                                        verticalArrangement = Arrangement.spacedBy(7.dp),
+                                        state = lazyListState
                                     ) {
                                         items(expenses) { expense ->
                                             ExpenseItem(expense = expense) {
@@ -477,7 +491,8 @@ fun HomeScreen(navController: NavController, viewModel: AuthViewModel) {
                                         modifier = Modifier
                                             .wrapContentHeight()
                                             .fillMaxSize(),
-                                        verticalArrangement = Arrangement.spacedBy(7.dp)
+                                        verticalArrangement = Arrangement.spacedBy(7.dp),
+                                        state = lazyListState
                                     ) {
                                         items(sales) {
                                             CustomerSalesItem(sales = it) {

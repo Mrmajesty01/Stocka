@@ -5,8 +5,10 @@ import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIos
@@ -31,7 +33,7 @@ import com.example.stocka.ui.theme.ListOfColors
 fun EditCustomerInfoScreen(navController: NavController, viewModel: AuthViewModel){
 
 
-    var customer = viewModel.customerSelected.value
+    val customer = viewModel.customerSelected.value
 
     val context = LocalContext.current
 
@@ -53,6 +55,10 @@ fun EditCustomerInfoScreen(navController: NavController, viewModel: AuthViewMode
     }
     var addAmount by remember{
          mutableStateOf("")
+    }
+
+    if(customer!=null) {
+        customerBalance = customer!!.customerBalance.toString()
     }
 
     Box( modifier = Modifier
@@ -111,6 +117,7 @@ fun EditCustomerInfoScreen(navController: NavController, viewModel: AuthViewMode
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(all = 20.dp)
+                    .verticalScroll(rememberScrollState()),
             ) {
 
 
@@ -218,6 +225,9 @@ fun EditCustomerInfoScreen(navController: NavController, viewModel: AuthViewMode
                         focus.clearFocus(force = true)
                         if (!isLoading) {
                             if (viewModel.customerSelected.value!!.customerName!!.isNotEmpty()) {
+                                if(customerBalance.isEmpty()){
+                                    viewModel.customerSelected.value = viewModel.customerSelected.value!!.copy(customerBalance = "0")
+                                }
                                 viewModel.editCustomer(
                                     customer!!,
                                     viewModel.customerSelected.value!!.customerName.toString(),

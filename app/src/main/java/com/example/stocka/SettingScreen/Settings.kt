@@ -79,6 +79,9 @@ fun SettingsScreen(navController:NavController,viewModel: AuthViewModel){
             confirmButton = {
                 TextButton(onClick = {
                     if(pin.text.toInt() == userData?.pin?.toInt()) {
+                        viewModel.getTotalSaleReceiptToday()
+                        viewModel.getTotalCreditReceiptToday()
+                        viewModel.getMostPurchasedProductsToday()
                         openDialogEdit = false
                         navController.navigate(Destination.DailyReport.routes)
                     }
@@ -317,6 +320,7 @@ fun SettingsScreen(navController:NavController,viewModel: AuthViewModel){
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
+
                                 openDialogEdit = true
                             },
                         verticalAlignment = Alignment.CenterVertically

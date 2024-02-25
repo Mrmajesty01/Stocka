@@ -17,7 +17,7 @@ data class Sales(
     val amountPaid:String?=null,
     var balance:String?=null,
     var totalQuantity:String?=null,
-): Parcelable {
+):Parcelable {
     constructor(parcel: Parcel) : this(
         parcel.readString(),
         parcel.readString(),

@@ -22,6 +22,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.stocka.HomeScreen.formatNumberWithDelimiter
 import com.example.stocka.Navigation.Destination
 import com.example.stocka.Viemodel.AuthViewModel
 import com.example.stocka.main.navigateTo
@@ -36,6 +37,19 @@ fun PayCreditScreen(navController: NavController, viewModel: AuthViewModel) {
     var focus = LocalFocusManager.current
     var context = LocalContext.current
     val isLoading = viewModel.inProgress.value
+
+    val customerBalance = customer?.customerBalance?.toDoubleOrNull() ?: 0.0
+    val formattedCustomerBalance = formatNumberWithDelimiter(customerBalance)
+
+    val totalPrice = creditItem?.totalPrice?.toDoubleOrNull() ?: 0.0
+    val formattedTotalPrice = formatNumberWithDelimiter(totalPrice)
+
+    val creditAmountPaid = creditItem?.amountPaid?.toDoubleOrNull() ?: 0.0
+    val formattedAmountPaid = formatNumberWithDelimiter(creditAmountPaid)
+
+    val creditBalance = creditItem?.balance?.toDoubleOrNull() ?: 0.0
+    val formattedCreditBalance = formatNumberWithDelimiter(creditBalance)
+
 
     var amountPaid by remember {
         mutableStateOf("")
@@ -124,7 +138,7 @@ fun PayCreditScreen(navController: NavController, viewModel: AuthViewModel) {
                     )
 
                     Text(
-                        text = customer?.customerBalance.toString(),
+                        text = formattedCustomerBalance,
                         modifier = Modifier.align(Alignment.BottomEnd)
                     )
                 }
@@ -151,13 +165,13 @@ fun PayCreditScreen(navController: NavController, viewModel: AuthViewModel) {
                     )
 
                     Text(
-                        text = creditItem?.totalPrice.toString(),
+                        text = formattedTotalPrice,
                         modifier = Modifier.align(Alignment.BottomStart)
                             .padding(start = 5.dp)
                     )
 
                     Text(
-                        text = creditItem?.amountPaid.toString(),
+                        text = formattedAmountPaid,
                         modifier = Modifier.align(Alignment.BottomEnd)
                     )
                 }
@@ -177,7 +191,7 @@ fun PayCreditScreen(navController: NavController, viewModel: AuthViewModel) {
                     )
 
                     Text(
-                        text = creditItem?.balance.toString(),
+                        text = formattedCreditBalance,
                         modifier = Modifier.align(Alignment.BottomCenter)
                     )
 

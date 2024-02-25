@@ -1,10 +1,13 @@
 package com.example.stocka.MakeSalesScreen
 
 import android.annotation.SuppressLint
+import android.os.Build
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
@@ -88,6 +91,10 @@ fun MakeSalesScreen(navController:NavController,viewModel: AuthViewModel) {
         mutableStateOf(false)
     }
 
+    var exist by rememberSaveable {
+        mutableStateOf(false)
+    }
+
     var customerName by rememberSaveable {
         mutableStateOf("")
     }
@@ -114,8 +121,10 @@ fun MakeSalesScreen(navController:NavController,viewModel: AuthViewModel) {
         mutableStateOf(false)
     }
 
+    var isDropdownVisible by rememberSaveable { mutableStateOf(false) }
+
     var editStockClickable by rememberSaveable {
-        mutableStateOf(false)
+        mutableStateOf(true)
     }
 
 
@@ -125,12 +134,28 @@ fun MakeSalesScreen(navController:NavController,viewModel: AuthViewModel) {
 
     }
 
-    if(stockSelected != null && stocks.any {it.stockName == stockSelected.stockName}  && stocks.any {it.stockId == stockSelected.stockId}) {
-            productName = stockSelected.stockName.toString()
-            cost = stockSelected.stockSellingPrice.toString()
-            totalCost = stockSelected.stockTotalPrice.toString()
-            editStockClickable = true
+    if(customerSelected != null){
+        customerName = customerSelected.customerName.toString()
 
+    }
+
+    if(stockSelected != null && stocks.any {it.stockName == stockSelected.stockName}  && stocks.any {it.stockId == stockSelected.stockId}) {
+            productName = stockSelected.stockName
+            cost = stockSelected.stockSellingPrice
+            totalCost = stockSelected.stockTotalPrice
+            editStockClickable = false
+            exist = true
+    }
+
+    if(stockSelected != null && !stocks.any {it.stockName == stockSelected.stockName}  && !stocks.any {it.stockId == stockSelected.stockId}) {
+        productName = stockSelected.stockName
+        cost = stockSelected.stockSellingPrice
+        viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockPurchasePrice = cost)
+        viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockSellingPrice = cost)
+        viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockFixedSellingPrice = cost)
+        viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockQuantity = quantity)
+        totalCost = stockSelected.stockTotalPrice
+        exist = false
     }
 
     if(stockSelected!=null) {
@@ -139,6 +164,10 @@ fun MakeSalesScreen(navController:NavController,viewModel: AuthViewModel) {
             stockSelected.stockPurchasePrice = ""
             stockSelected.stockTotalPrice = ""
             stockSelected.stockFixedSellingPrice = ""
+            customerName = customerSelected?.customerName.toString()
+            productName = stockSelected.stockName.toString()
+            cost = stockSelected.stockSellingPrice.toString()
+            totalCost = stockSelected.stockTotalPrice.toString()
             empty = true
         }
     }
@@ -256,10 +285,11 @@ fun MakeSalesScreen(navController:NavController,viewModel: AuthViewModel) {
                 {
 
                     OutlinedTextField(
-                        value = if(stockSelected!=null) viewModel.stockSelected.value!!.stockName.toString() else "",
+                        value = if(stockSelected!=null) viewModel.stockSelected.value!!.stockName else "",
                         onValueChange = {
                             viewModel.stockSelected.value = Stock()
                             viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockName = it)
+                            isDropdownVisible = it.isNotEmpty()
                         },
                         label = {
                             Text(
@@ -267,8 +297,38 @@ fun MakeSalesScreen(navController:NavController,viewModel: AuthViewModel) {
                             )
                         },
                         modifier = Modifier.align(Alignment.Center),
-                        enabled = !editStockClickable
+                        enabled = editStockClickable
                     )
+                    if (isDropdownVisible && stocks.isNotEmpty() && viewModel.stockSelected.value?.stockName?.isNotEmpty() == true) {
+
+                        LazyColumn(
+                            modifier = Modifier
+                                .background(Color.LightGray)
+                                .wrapContentWidth(Alignment.CenterHorizontally)
+                                .align(Alignment.TopCenter)
+                        ) {
+                            items(
+                                items = stocks.filter {
+                                    it.stockName.contains(viewModel.stockSelected.value!!.stockName, ignoreCase = true)
+                                }.take(3)
+                            ) { stock ->
+                                DropdownMenuItem(onClick = {
+                                    // Handle item selection
+                                    viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockName = stock.stockName)
+                                    viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockId = stock.stockId)
+                                    viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockPurchasePrice = stock.stockPurchasePrice)
+                                    viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockSellingPrice = stock.stockSellingPrice)
+                                    viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockFixedSellingPrice = stock.stockFixedSellingPrice)
+                                    viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockTotalPrice = stock.stockTotalPrice)
+                                    viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockQuantity = stock.stockQuantity)
+                                    viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockQuantitySold = stock.stockQuantitySold)
+                                    isDropdownVisible = false
+                                }) {
+                                    Text(text = stock.stockName)
+                                }
+                            }
+                        }
+                    }
 
                     Icon(
                         imageVector = Icons.Default.Add,
@@ -427,7 +487,7 @@ fun MakeSalesScreen(navController:NavController,viewModel: AuthViewModel) {
                 Button(
                     onClick = {
                         focus.clearFocus(force = true)
-
+                        editStockClickable = true
                         if(!isLoading || !isLoadingStock ) {
                             if (stockToUpdate.any { it.first.stockName == productName }) {
                                 val existingStock =
@@ -460,6 +520,7 @@ fun MakeSalesScreen(navController:NavController,viewModel: AuthViewModel) {
                             }
 
                             if (customerName.isBlank()) {
+                                customerName = "Customer"
                                 viewModel.customerSelected.value = Customer()
                                 viewModel.customerSelected.value =
                                     viewModel.customerSelected.value!!.copy(customerName = "Customer")
@@ -484,8 +545,8 @@ fun MakeSalesScreen(navController:NavController,viewModel: AuthViewModel) {
                                 if (stockSelected != null) {
                                     stockToUpdate.add(Pair(stockSelected!!, quantity.toInt()))
                                 }
-                                val profit = cost.toInt()
-                                    ?.minus(stockSelected!!.stockPurchasePrice?.toInt()!!)
+                                val profit = cost.toDouble()
+                                    ?.minus(stockSelected!!.stockPurchasePrice?.toDouble()!!)
 
 
                                 val sale =
@@ -497,7 +558,8 @@ fun MakeSalesScreen(navController:NavController,viewModel: AuthViewModel) {
                                         quantity = quantity,
                                         price = viewModel.stockSelected.value!!.stockSellingPrice.toString(),
                                         totalPrice = viewModel.stockSelected.value!!.stockTotalPrice.toString(),
-                                        profit = profit.toString()
+                                        profit = profit.toString(),
+                                        exist = exist
                                     )
                                 if (sales.isNotEmpty() && sales.last().isFull()) {
                                     Toast.makeText(
@@ -577,9 +639,9 @@ fun MakeSalesScreen(navController:NavController,viewModel: AuthViewModel) {
                             }
 
                             if (customerName.isBlank()) {
+                                customerName = "Customer"
                                 viewModel.customerSelected.value = Customer()
-                                viewModel.customerSelected.value =
-                                    viewModel.customerSelected.value!!.copy(customerName = "Customer")
+                                viewModel.customerSelected.value = viewModel.customerSelected.value!!.copy(customerName = "Customer")
                                 return@Button
                             }
 
@@ -607,7 +669,7 @@ fun MakeSalesScreen(navController:NavController,viewModel: AuthViewModel) {
 
                                     stockToUpdate.add(Pair(stockSelected!!, quantity.toInt()))
                                     var profit =
-                                        stockSelected.stockFixedSellingPrice!!.toInt().minus(stockSelected?.stockPurchasePrice?.toInt()!!)
+                                        stockSelected.stockFixedSellingPrice!!.toDouble().minus(stockSelected?.stockPurchasePrice?.toDouble()!!)
                                     val sale =
                                         SingleSale(
                                             saleId = salesId.toString(),
@@ -617,35 +679,39 @@ fun MakeSalesScreen(navController:NavController,viewModel: AuthViewModel) {
                                             quantity = quantity,
                                             price = viewModel.stockSelected.value!!.stockFixedSellingPrice.toString(),
                                             totalPrice = viewModel.stockSelected.value!!.stockTotalPrice.toString(),
-                                            profit = profit.toString()
+                                            profit = profit.toString(),
+                                            exist = exist
                                         )
                                     sales.last().add(sale)
                                 }
 
-                                viewModel.onNewSales(
-                                    customerName = viewModel.customerSelected.value!!.customerName.toString(),
-                                    customerId = if (customerSelected?.customerId != null) customerSelected.customerId.toString()
-                                    else UUID.randomUUID().toString(),
-                                    sales = sales.flatMap { it.sales },
-                                    totalPrice = sales.flatMap { it.sales }
-                                        .sumByDouble { it.totalPrice?.toDoubleOrNull() ?: 0.0 }
-                                        .toString(),
-                                    totalProfit = sales.flatMap { it.sales }
-                                        .sumByDouble {
-                                            (it.profit?.toDoubleOrNull()
-                                                ?: 0.0) * (it.quantity?.toDoubleOrNull() ?: 0.0)
-                                        }
-                                        .toString(),
-                                    totalQuantity = sales.flatMap { it.sales }
-                                        .sumByDouble { it.quantity?.toDoubleOrNull() ?: 0.0 }
-                                        .toString(),
-                                    stockQuantityList = stockToUpdate
-                                ) {
-                                    sales = emptyList()
-                                    stockToUpdate.clear()
-                                    viewModel.stockSelected.value = null
-                                    viewModel.customerSelected.value = null
-                                    navigateTo(navController, Destination.SalesInfo)
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                    viewModel.onNewSales(
+                                        customerName = viewModel.customerSelected.value!!.customerName.toString(),
+                                        customerId = if (customerSelected?.customerId != null) customerSelected.customerId.toString()
+                                        else UUID.randomUUID().toString(),
+                                        sales = sales.flatMap { it.sales },
+                                        totalPrice = sales.flatMap { it.sales }
+                                            .sumByDouble { it.totalPrice?.toDoubleOrNull() ?: 0.0 }
+                                            .toString(),
+                                        totalProfit = sales.flatMap { it.sales }
+                                            .sumByDouble {
+                                                (it.profit?.toDoubleOrNull()
+                                                    ?: 0.0) * (it.quantity?.toDoubleOrNull() ?: 0.0)
+                                            }
+                                            .toString(),
+                                        totalQuantity = sales.flatMap { it.sales }
+                                            .sumByDouble { it.quantity?.toDoubleOrNull() ?: 0.0 }
+                                            .toString(),
+                                        stockQuantityList = stockToUpdate,
+                                        exist = exist
+                                    ) {
+                                        sales = emptyList()
+                                        stockToUpdate.clear()
+                                        viewModel.stockSelected.value = null
+                                        viewModel.customerSelected.value = null
+                                        navigateTo(navController, Destination.SalesInfo)
+                                    }
                                 }
 
                             }
@@ -654,30 +720,33 @@ fun MakeSalesScreen(navController:NavController,viewModel: AuthViewModel) {
                            else if (sales.isNotEmpty() && sales.last().isFull()) {
 
 
-                                viewModel.onNewSales(
-                                    customerName = viewModel.customerSelected.value!!.customerName.toString(),
-                                    customerId = if (customerSelected?.customerId != null) customerSelected.customerId.toString()
-                                    else UUID.randomUUID().toString(),
-                                    sales = sales.flatMap { it.sales },
-                                    totalPrice = sales.flatMap { it.sales }
-                                        .sumByDouble { it.totalPrice?.toDoubleOrNull() ?: 0.0 }
-                                        .toString(),
-                                    totalProfit = sales.flatMap { it.sales }
-                                        .sumByDouble {
-                                            (it.profit?.toDoubleOrNull()
-                                                ?: 0.0) * (it.quantity?.toDoubleOrNull() ?: 0.0)
-                                        }
-                                        .toString(),
-                                    totalQuantity = sales.flatMap { it.sales }
-                                        .sumByDouble { it.quantity?.toDoubleOrNull() ?: 0.0 }
-                                        .toString(),
-                                    stockQuantityList = stockToUpdate
-                                ) {
-                                    sales = emptyList()
-                                    stockToUpdate.clear()
-                                    viewModel.stockSelected.value = null
-                                    viewModel.customerSelected.value = null
-                                    navigateTo(navController, Destination.SalesInfo)
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                    viewModel.onNewSales(
+                                        customerName = viewModel.customerSelected.value!!.customerName.toString(),
+                                        customerId = if (customerSelected?.customerId != null) customerSelected.customerId.toString()
+                                        else UUID.randomUUID().toString(),
+                                        sales = sales.flatMap { it.sales },
+                                        totalPrice = sales.flatMap { it.sales }
+                                            .sumByDouble { it.totalPrice?.toDoubleOrNull() ?: 0.0 }
+                                            .toString(),
+                                        totalProfit = sales.flatMap { it.sales }
+                                            .sumByDouble {
+                                                (it.profit?.toDoubleOrNull()
+                                                    ?: 0.0) * (it.quantity?.toDoubleOrNull() ?: 0.0)
+                                            }
+                                            .toString(),
+                                        totalQuantity = sales.flatMap { it.sales }
+                                            .sumByDouble { it.quantity?.toDoubleOrNull() ?: 0.0 }
+                                            .toString(),
+                                        stockQuantityList = stockToUpdate,
+                                        exist = exist
+                                    ) {
+                                        sales = emptyList()
+                                        stockToUpdate.clear()
+                                        viewModel.stockSelected.value = null
+                                        viewModel.customerSelected.value = null
+                                        navigateTo(navController, Destination.SalesInfo)
+                                    }
                                 }
                             }
 
@@ -687,7 +756,7 @@ fun MakeSalesScreen(navController:NavController,viewModel: AuthViewModel) {
 
                                     stockToUpdate.add(Pair(stockSelected!!, quantity.toInt()))
                                     var profit =
-                                        stockSelected.stockFixedSellingPrice!!.toInt().minus(stockSelected?.stockPurchasePrice?.toInt()!!)
+                                        stockSelected.stockFixedSellingPrice!!.toDouble().minus(stockSelected?.stockPurchasePrice?.toDouble()!!)
                                     val sale =
                                         SingleSale(
                                             saleId = salesId.toString(),
@@ -697,36 +766,40 @@ fun MakeSalesScreen(navController:NavController,viewModel: AuthViewModel) {
                                             quantity = quantity,
                                             price = viewModel.stockSelected.value!!.stockFixedSellingPrice.toString(),
                                             totalPrice = viewModel.stockSelected.value!!.stockTotalPrice.toString(),
-                                            profit = profit.toString()
+                                            profit = profit.toString(),
+                                            exist = exist
                                         )
                                     sales = listOf(MakeSale(listOf(sale)))
                                 }
 
 
-                                viewModel.onNewSales(
-                                    customerName = viewModel.customerSelected.value!!.customerName.toString(),
-                                    customerId = if (customerSelected?.customerId != null) customerSelected.customerId.toString()
-                                    else UUID.randomUUID().toString(),
-                                    sales = sales.flatMap { it.sales },
-                                    totalPrice = sales.flatMap { it.sales }
-                                        .sumByDouble { it.totalPrice?.toDoubleOrNull() ?: 0.0 }
-                                        .toString(),
-                                    totalProfit = sales.flatMap { it.sales }
-                                        .sumByDouble {
-                                            (it.profit?.toDoubleOrNull()
-                                                ?: 0.0) * (it.quantity?.toDoubleOrNull() ?: 0.0)
-                                        }
-                                        .toString(),
-                                    totalQuantity = sales.flatMap { it.sales }
-                                        .sumByDouble { it.quantity?.toDoubleOrNull() ?: 0.0 }
-                                        .toString(),
-                                    stockQuantityList = stockToUpdate
-                                ) {
-                                    sales = emptyList()
-                                    stockToUpdate.clear()
-                                    viewModel.stockSelected.value = null
-                                    viewModel.customerSelected.value = null
-                                    navigateTo(navController, Destination.SalesInfo)
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                                    viewModel.onNewSales(
+                                        customerName = viewModel.customerSelected.value!!.customerName.toString(),
+                                        customerId = if (customerSelected?.customerId != null) customerSelected.customerId.toString()
+                                        else UUID.randomUUID().toString(),
+                                        sales = sales.flatMap { it.sales },
+                                        totalPrice = sales.flatMap { it.sales }
+                                            .sumByDouble { it.totalPrice?.toDoubleOrNull() ?: 0.0 }
+                                            .toString(),
+                                        totalProfit = sales.flatMap { it.sales }
+                                            .sumByDouble {
+                                                (it.profit?.toDoubleOrNull()
+                                                    ?: 0.0) * (it.quantity?.toDoubleOrNull() ?: 0.0)
+                                            }
+                                            .toString(),
+                                        totalQuantity = sales.flatMap { it.sales }
+                                            .sumByDouble { it.quantity?.toDoubleOrNull() ?: 0.0 }
+                                            .toString(),
+                                        stockQuantityList = stockToUpdate,
+                                        exist = exist
+                                    ) {
+                                        sales = emptyList()
+                                        stockToUpdate.clear()
+                                        viewModel.stockSelected.value = null
+                                        viewModel.customerSelected.value = null
+                                        navigateTo(navController, Destination.SalesInfo)
+                                    }
                                 }
 
                             }

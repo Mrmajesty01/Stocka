@@ -2,6 +2,7 @@ package com.example.stocka.di
 
 
 
+import android.content.Context
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -11,11 +12,12 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.components.ViewModelComponent
+import dagger.hilt.android.qualifiers.ApplicationContext
 
 
 @Module
 @InstallIn(ViewModelComponent::class)
-class StockaModule {
+ class StockaModule {
 
 
     @Provides
@@ -25,5 +27,9 @@ class StockaModule {
     @Provides
     fun provideFirebaseFireStore(): FirebaseFirestore = Firebase.firestore
 
+    @Provides
+    fun provideApplicationContext(@ApplicationContext context: Context): Context = context
 
 }
+
+

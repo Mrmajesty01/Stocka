@@ -159,7 +159,7 @@ fun ExpenseScreen(navController:NavController,viewModel: AuthViewModel){
                     },
                     trailingIcon = {
                         IconButton(onClick = {
-                            viewModel.invoiceSearch(searchValue)
+                            viewModel.expenseSearch(searchValue)
                             focus.clearFocus()
                         }) {
                             Icon(imageVector = Icons.Filled.Search , contentDescription = null )

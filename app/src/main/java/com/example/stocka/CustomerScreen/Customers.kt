@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -60,7 +61,7 @@ fun CustomersScreen(navController:NavController,viewModel: AuthViewModel){
     val searchedCustomer = viewModel.searchedCustomer.value
     val focus = LocalFocusManager.current
     val totalAmountOwingCustomers = viewModel.totalAmountOwed.value
-
+    val lazyListState = rememberLazyListState()
 
     var searching by rememberSaveable {
         mutableStateOf(false)
@@ -205,7 +206,8 @@ fun CustomersScreen(navController:NavController,viewModel: AuthViewModel){
                                 modifier = Modifier
                                     .wrapContentHeight()
                                     .fillMaxSize(),
-                                verticalArrangement = Arrangement.spacedBy(7.dp)
+                                verticalArrangement = Arrangement.spacedBy(7.dp),
+                                state = lazyListState
                             ) {
                                 items(customers) {
                                     CustomerItem(customer = it) { go ->
@@ -221,7 +223,8 @@ fun CustomersScreen(navController:NavController,viewModel: AuthViewModel){
                             modifier = Modifier
                                 .wrapContentHeight()
                                 .fillMaxSize(),
-                            verticalArrangement = Arrangement.spacedBy(7.dp)
+                            verticalArrangement = Arrangement.spacedBy(7.dp),
+                            state = lazyListState
                         ) {
                             items(searchedCustomer) {
                                 CustomerItem(customer = it){go->

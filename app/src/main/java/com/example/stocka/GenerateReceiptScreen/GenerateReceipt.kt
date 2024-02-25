@@ -1,11 +1,22 @@
 package com.example.stocka.GenerateReceiptScreen
 
 import android.annotation.SuppressLint
+import android.content.Context
+import android.os.Bundle
+import android.os.CancellationSignal
+import android.os.ParcelFileDescriptor
+import android.print.PageRange
+import android.print.PrintAttributes
+import android.print.PrintDocumentAdapter
+import android.print.PrintManager
+import androidx.activity.ComponentActivity
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.Divider
@@ -228,56 +239,106 @@ fun GenerateReceiptScreen(navController: NavController, viewModel: AuthViewModel
 
             Spacer(modifier = Modifier.padding(10.dp))
 
-            Box(
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(45.dp)
+                    .verticalScroll(rememberScrollState()),
             ) {
 
-                Text(
-                    text = "Total Quantity",
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.align(Alignment.TopStart)
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(45.dp)
+                ) {
 
-                Text(
-                    text = "Total Amount",
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.align(Alignment.TopEnd)
-                )
+                    Text(
+                        text = "Total Quantity",
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.align(Alignment.TopStart)
+                    )
 
-                Text(
-                    text = saleInfo!!.totalQuantity.toString(),
-                    modifier = Modifier.align(Alignment.BottomStart)
-                )
+                    Text(
+                        text = "Total Amount",
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.align(Alignment.TopEnd)
+                    )
 
-                Text(
-                    text = saleInfo.totalPrice.toString(),
-                    modifier = Modifier.align(Alignment.BottomEnd)
-                )
+                    Text(
+                        text = saleInfo!!.totalQuantity.toString(),
+                        modifier = Modifier.align(Alignment.BottomStart)
+                    )
+
+                    Text(
+                        text = saleInfo.totalPrice.toString(),
+                        modifier = Modifier.align(Alignment.BottomEnd)
+                    )
+
+                }
+                Spacer(modifier = Modifier.padding(20.dp))
+
+                Button(
+                    onClick = {},
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier
+                        .fillMaxWidth(0.7f)
+                        .height(50.dp)
+                        .align(Alignment.CenterHorizontally),
+                    colors = ButtonDefaults.buttonColors(ListOfColors.orange)
+                ) {
+
+                    Text(
+                        text = "Print",
+                        color = ListOfColors.black
+                    )
+                }
 
             }
-            Spacer(modifier = Modifier.padding(20.dp))
+        }
+    }
+}
 
-            Button(
-                onClick = {},
-                shape = RoundedCornerShape(10.dp),
-                modifier = Modifier
-                    .fillMaxWidth(0.7f)
-                    .height(50.dp)
-                    .align(Alignment.CenterHorizontally),
-                colors = ButtonDefaults.buttonColors(ListOfColors.orange)
-            ) {
 
-                Text(
-                    text = "Print",
-                    color = ListOfColors.black
-                )
-            }
+private fun ComponentActivity.printDocument() {
+    val printManager = getSystemService(Context.PRINT_SERVICE) as PrintManager
+
+    val printAdapter = object : PrintDocumentAdapter() {
+        override fun onLayout(
+            oldAttributes: PrintAttributes?,
+            newAttributes: PrintAttributes,
+            cancellationSignal: CancellationSignal?,
+            callback: LayoutResultCallback,
+            extras: Bundle?
+        ) {
+            // Respond to onLayout callback
+            // You may need to calculate the print layout based on your composable content
+        }
+
+        override fun onWrite(
+            pages: Array<out PageRange>?,
+            destination: ParcelFileDescriptor?,
+            cancellationSignal: CancellationSignal?,
+            callback: WriteResultCallback
+        ) {
 
 
         }
+
+        override fun onFinish() {
+            // Respond to onFinish callback
+            // Clean up any resources if needed
+        }
     }
+
+    val printJob = printManager.print(
+        "Generate Receipt",
+        printAdapter,
+        PrintAttributes.Builder()
+            .setMediaSize(PrintAttributes.MediaSize.ISO_A4)
+            .setColorMode(PrintAttributes.COLOR_MODE_MONOCHROME)
+            .setMinMargins(PrintAttributes.Margins.NO_MARGINS)
+            .build()
+    )
+
+
 }
 
 

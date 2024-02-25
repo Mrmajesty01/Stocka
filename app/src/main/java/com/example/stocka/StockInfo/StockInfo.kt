@@ -4,7 +4,9 @@ import android.annotation.SuppressLint
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
@@ -24,6 +26,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.stocka.HomeScreen.formatNumberWithDelimiter
 import com.example.stocka.Navigation.Destination
 import com.example.stocka.Viemodel.AuthViewModel
 import com.example.stocka.ui.theme.ListOfColors
@@ -31,23 +34,27 @@ import com.example.stocka.ui.theme.ListOfColors
 @SuppressLint("UnusedMaterialScaffoldPaddingParameter")
 @Composable
 fun StockInfoScreen(
-    navController: NavController, viewModel: AuthViewModel){
+    navController: NavController, viewModel: AuthViewModel) {
 
-        val isLoading = viewModel.getStockProgress.value
-        val stock = viewModel.stockSelected.value
-        val isLoadingDelete = viewModel.deleteStockProgress.value
-        val userData = viewModel.userData.value
-        var openDialog by rememberSaveable {
-            mutableStateOf(false)
-        }
-        var openDialogEdit by rememberSaveable {
-            mutableStateOf(false)
-        }
-        var pin by remember { mutableStateOf(TextFieldValue()) }
-        val context = LocalContext.current
+    val isLoading = viewModel.getStockProgress.value
+    val stock = viewModel.stockSelected.value
+    val isLoadingDelete = viewModel.deleteStockProgress.value
+    val userData = viewModel.userData.value
+    var openDialog by rememberSaveable {
+        mutableStateOf(false)
+    }
+    var openDialogEdit by rememberSaveable {
+        mutableStateOf(false)
+    }
+    var pin by remember { mutableStateOf(TextFieldValue()) }
+    val context = LocalContext.current
+
+    var stockPrice = stock?.stockSellingPrice?.toDoubleOrNull() ?: 0.0
+
+    var formattedStockPrice = formatNumberWithDelimiter(stockPrice)
 
 
-    if(openDialogEdit){
+    if (openDialogEdit) {
         AlertDialog(
             onDismissRequest = { openDialogEdit = false },
 
@@ -73,12 +80,11 @@ fun StockInfoScreen(
 
             confirmButton = {
                 TextButton(onClick = {
-                    if(pin.text.toInt() == userData?.pin?.toInt()) {
+                    if (pin.text.toInt() == userData?.pin?.toInt()) {
                         openDialogEdit = false
                         viewModel.getStock(stock!!)
                         navController.navigate(Destination.EditStock.routes)
-                    }
-                    else{
+                    } else {
                         Toast.makeText(context, "wrong pin try again", Toast.LENGTH_LONG).show()
                     }
                 }) {
@@ -96,16 +102,16 @@ fun StockInfoScreen(
         )
     }
 
-        if(openDialog){
-            AlertDialog(
-                onDismissRequest = { openDialog = false },
+    if (openDialog) {
+        AlertDialog(
+            onDismissRequest = { openDialog = false },
 
-                title = {
-                    Text(text = "Delete Stock")
-                },
+            title = {
+                Text(text = "Delete Stock")
+            },
 
-                text = {
-                    Column {
+            text = {
+                Column {
                     Text(text = "Are you sure you want to delete ${stock!!.stockName} from stocks ?")
                     Spacer(modifier = Modifier.height(16.dp))
 
@@ -119,232 +125,262 @@ fun StockInfoScreen(
                         keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.NumberPassword),
                     )
                 }
-                },
+            },
 
-                confirmButton = {
-                    TextButton(onClick = {
-                        if(pin.text.toInt() == userData?.pin?.toInt()) {
-                            openDialog = false
-                            viewModel.deleteStock(stock!!.stockId.toString()) {
-                                navController.navigate(Destination.Stocks.routes)
-                            }
-                        }
-                        else{
-                            Toast.makeText(context, "wrong pin try again", Toast.LENGTH_LONG).show()
-                        }
-                    }) {
-                        Text(text = "Yes")
-                    }
-                },
-
-                dismissButton = {
-                    TextButton(onClick = {
+            confirmButton = {
+                TextButton(onClick = {
+                    if (pin.text.toInt() == userData?.pin?.toInt()) {
                         openDialog = false
-                    }) {
-                        Text(text = "No")
+                        viewModel.deleteStock(stock!!.stockId.toString()) {
+                            navController.navigate(Destination.Stocks.routes)
+                        }
+                    } else {
+                        Toast.makeText(context, "wrong pin try again", Toast.LENGTH_LONG).show()
                     }
-                },
+                }) {
+                    Text(text = "Yes")
+                }
+            },
+
+            dismissButton = {
+                TextButton(onClick = {
+                    openDialog = false
+                }) {
+                    Text(text = "No")
+                }
+            },
+        )
+    }
+
+
+    Box(
+        modifier = Modifier.fillMaxSize()
+    ) {
+
+        if (isLoading || isLoadingDelete) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.LightGray.copy(alpha = 0.5f))
+                    .clickable {}
             )
         }
 
-
-        Box(
+        Column(
             modifier = Modifier.fillMaxSize()
         ) {
 
-            if (isLoading || isLoadingDelete) {
-                Box(
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 10.dp)
+            ) {
+
+                Icon(
+                    imageVector = Icons.Default.ArrowBackIos,
+                    contentDescription = "BackIcon",
                     modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.LightGray.copy(alpha = 0.5f))
-                        .clickable {}
+                        .padding(start = 5.dp)
+                        .size(15.dp)
+                        .align(Alignment.CenterStart)
+                        .clickable {
+                            if (!isLoading || !isLoadingDelete) {
+                                navController.navigate(Destination.Stocks.routes)
+                            }
+                        },
+                    tint = ListOfColors.black
+                )
+
+                Text(
+                    text = "Stock Info",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.Center),
+                    textAlign = TextAlign.Center
+                )
+
+                Icon(
+                    imageVector = Icons.Default.History,
+                    contentDescription = "HistoryIcon",
+                    modifier = Modifier
+                        .padding(end = 5.dp)
+                        .size(15.dp)
+                        .align(Alignment.CenterEnd)
+                        .clickable {
+                            if (!isLoading || !isLoadingDelete) {
+                                viewModel.retrieveStockHistory(stock?.stockId.toString())
+                                navController.navigate(Destination.StockHistory.routes)
+                            }
+                        },
+                    tint = ListOfColors.black
                 )
             }
 
-            Column(
-                modifier = Modifier.fillMaxSize()
+            Divider(thickness = 1.dp, color = ListOfColors.lightGrey)
+
+            Spacer(modifier = Modifier.padding(15.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp)
+                    .padding(start = 10.dp, end = 10.dp)
             ) {
 
+                Text(
+                    text = "Stock Name",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.align(Alignment.TopStart)
+                )
 
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 10.dp)
-                ) {
+                Text(
+                    text = "Unit Price",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.align(Alignment.TopEnd)
+                )
 
-                    Icon(
-                        imageVector = Icons.Default.ArrowBackIos,
-                        contentDescription = "BackIcon",
-                        modifier = Modifier
-                            .padding(start = 5.dp)
-                            .size(15.dp)
-                            .align(Alignment.CenterStart)
-                            .clickable {
-                                if (!isLoading || !isLoadingDelete) {
-                                    navController.navigate(Destination.Stocks.routes)
-                                }
-                            },
-                        tint = ListOfColors.black
-                    )
+                Text(
+                    text = stock?.stockName.toString(),
+                    fontSize = 15.sp,
+                    modifier = Modifier.align(Alignment.BottomStart)
+                )
 
-                    Text(
-                        text = "Stock Info",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .align(Alignment.Center),
-                        textAlign = TextAlign.Center
-                    )
+                Text(
+                    text = formattedStockPrice,
+                    fontSize = 15.sp,
+                    modifier = Modifier.align(Alignment.BottomEnd)
+                )
+            }
 
-                    Icon(
-                        imageVector = Icons.Default.History,
-                        contentDescription = "HistoryIcon",
-                        modifier = Modifier
-                            .padding(end = 5.dp)
-                            .size(15.dp)
-                            .align(Alignment.CenterEnd)
-                            .clickable {
-                                if (!isLoading || !isLoadingDelete) {
-                                    viewModel.retrieveStockHistory(stock?.stockId.toString())
-                                    navController.navigate(Destination.StockHistory.routes)
-                                }
-                            },
-                        tint = ListOfColors.black
-                    )
-                }
+            Spacer(modifier = Modifier.padding(10.dp))
 
-                Divider(thickness = 1.dp, color = ListOfColors.lightGrey)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp)
+                    .padding(start = 10.dp, end = 10.dp)
+            ) {
 
-                Spacer(modifier = Modifier.padding(15.dp))
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp)
-                        .padding(start = 10.dp, end = 10.dp)
-                ) {
+                Text(
+                    text = "Quantity Sold",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.align(Alignment.TopStart)
+                )
 
-                    Text(
-                        text = "Stock Name",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.align(Alignment.TopStart)
-                    )
+                Text(
+                    text = "Quantity Remaining",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.align(Alignment.TopEnd)
+                )
 
-                    Text(
-                        text = "Unit Price",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.align(Alignment.TopEnd)
-                    )
+                Text(
+                    text = stock?.stockQuantitySold.toString(),
+                    fontSize = 15.sp,
+                    modifier = Modifier.align(Alignment.BottomStart)
+                )
 
-                    Text(
-                        text = stock?.stockName.toString(),
-                        fontSize = 15.sp,
-                        modifier = Modifier.align(Alignment.BottomStart)
-                    )
+                Text(
+                    text = stock?.stockQuantity.toString(),
+                    fontSize = 15.sp,
+                    modifier = Modifier.align(Alignment.BottomEnd)
+                )
+            }
 
-                    Text(
-                        text = stock?.stockSellingPrice.toString(),
-                        fontSize = 15.sp,
-                        modifier = Modifier.align(Alignment.BottomEnd)
-                    )
-                }
+            Spacer(modifier = Modifier.padding(20.dp))
 
-                Spacer(modifier = Modifier.padding(10.dp))
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp)
-                        .padding(start = 10.dp, end = 10.dp)
-                ) {
-
-                    Text(
-                        text = "Quantity Sold",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.align(Alignment.TopStart)
-                    )
-
-                    Text(
-                        text = "Quantity Remaining",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.align(Alignment.TopEnd)
-                    )
-
-                    Text(
-                        text = stock?.stockQuantitySold.toString(),
-                        fontSize = 15.sp,
-                        modifier = Modifier.align(Alignment.BottomStart)
-                    )
-
-                    Text(
-                        text = stock?.stockQuantity.toString(),
-                        fontSize = 15.sp,
-                        modifier = Modifier.align(Alignment.BottomEnd)
-                    )
-                }
-
-                Spacer(modifier = Modifier.padding(20.dp))
+            Row(
+                Modifier
+                    .horizontalScroll(rememberScrollState())
+                    .align(Alignment.CenterHorizontally),
+            ) {
 
                 Button(
                     onClick = {
-                        if(!isLoading || !isLoadingDelete) {
-                           openDialogEdit = true
+                        if (!isLoading) {
+                            viewModel.getStock(stock!!)
+                            navController.navigate(Destination.AddToStock.routes)
                         }
                     },
                     shape = RoundedCornerShape(10.dp),
                     modifier = Modifier
-                        .fillMaxWidth(0.7f)
-                        .height(50.dp)
-                        .align(Alignment.CenterHorizontally),
+                        .width(120.dp)
+                        .height(50.dp),
                     colors = ButtonDefaults.buttonColors(ListOfColors.orange)
 
 
                 ) {
                     Text(
-                        text = "Edit",
+                        text = "Add Stock",
+                        textAlign = TextAlign.Center,
                         color = ListOfColors.black
                     )
                 }
 
                 Spacer(modifier = Modifier.padding(10.dp))
 
-
                 Button(
                     onClick = {
-                          if (!isLoading || !isLoadingDelete){
-                              openDialog = true
-                          }
+                        if (!isLoading || !isLoadingDelete) {
+                            openDialogEdit = true
+                        }
                     },
                     shape = RoundedCornerShape(10.dp),
                     modifier = Modifier
-                        .fillMaxWidth(0.7f)
-                        .height(50.dp)
-                        .align(Alignment.CenterHorizontally),
+                        .width(120.dp)
+                        .height(50.dp),
                     colors = ButtonDefaults.buttonColors(ListOfColors.orange)
 
 
                 ) {
                     Text(
-                        text = "Delete",
+                        text = "Edit Stock",
+                        textAlign = TextAlign.Center,
                         color = ListOfColors.black
                     )
                 }
-
             }
-            if(isLoading || isLoadingDelete){
-                CircularProgressIndicator(
-                    modifier = Modifier
-                        .size(50.dp)
-                        .align(Alignment.Center)
+
+            Spacer(modifier = Modifier.padding(10.dp))
+
+
+            Button(
+                onClick = {
+                    if (!isLoading || !isLoadingDelete) {
+                        openDialog = true
+                    }
+                },
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier
+                    .fillMaxWidth(0.7f)
+                    .height(50.dp)
+                    .align(Alignment.CenterHorizontally),
+                colors = ButtonDefaults.buttonColors(ListOfColors.orange)
+
+
+            ) {
+                Text(
+                    text = "Delete Stock",
+                    color = ListOfColors.black
                 )
             }
-        }
 
+        }
+        if (isLoading || isLoadingDelete) {
+            CircularProgressIndicator(
+                modifier = Modifier
+                    .size(50.dp)
+                    .align(Alignment.Center)
+            )
+        }
     }
+
+}
 
 
 

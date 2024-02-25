@@ -101,13 +101,16 @@ fun AddSalesScreen(navController:NavController,viewModel: AuthViewModel) {
     var quantity by rememberSaveable {
         mutableStateOf("1")
     }
+    var exist by rememberSaveable {
+        mutableStateOf(false)
+    }
 
     var editCustomerClickable by rememberSaveable {
         mutableStateOf(false)
     }
 
     var editStockClickable by rememberSaveable {
-        mutableStateOf(false)
+        mutableStateOf(true)
     }
 
     if (customerSelected != null) {
@@ -115,11 +118,23 @@ fun AddSalesScreen(navController:NavController,viewModel: AuthViewModel) {
         editCustomerClickable = true
     }
 
-    if (stockSelected != null) {
+    if (stockSelected != null && stocks.any {it.stockName == stockSelected.stockName}  && stocks.any {it.stockId == stockSelected.stockId}) {
         productName = stockSelected.stockName.toString()
         cost = stockSelected.stockSellingPrice.toString()
         totalCost = AddSaleupdateTotalCost(cost.toFloat(),quantity.toInt())
-        editStockClickable = true
+        editStockClickable = false
+        exist = true
+    }
+
+    if(stockSelected != null) {
+        productName = stockSelected.stockName
+        cost = stockSelected.stockSellingPrice
+        viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockPurchasePrice = cost)
+        viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockSellingPrice = cost)
+        viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockFixedSellingPrice = cost)
+        viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockQuantity = quantity)
+        totalCost = stockSelected.stockTotalPrice
+        exist = false
     }
 
 
@@ -216,6 +231,8 @@ fun AddSalesScreen(navController:NavController,viewModel: AuthViewModel) {
                     OutlinedTextField(
                         value = productName,
                         onValueChange = {
+                            viewModel.stockSelected.value = Stock()
+                            viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockName = it)
                             productName = it
                         },
                         label = {
@@ -224,7 +241,7 @@ fun AddSalesScreen(navController:NavController,viewModel: AuthViewModel) {
                             )
                         },
                         modifier = Modifier.align(Alignment.Center),
-                        enabled = false
+                        enabled = editStockClickable
                     )
 
                     Icon(
@@ -263,7 +280,7 @@ fun AddSalesScreen(navController:NavController,viewModel: AuthViewModel) {
                         else {
                             viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockSellingPrice = it)
                             viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockFixedSellingPrice = it)
-                            viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockSellingPrice = (AddSaleupdateTotalCost(viewModel.stockSelected.value!!.stockSellingPrice!!.toFloat(), quantity.toInt())))
+                            viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockTotalPrice = (AddSaleupdateTotalCost(viewModel.stockSelected.value!!.stockSellingPrice!!.toFloat(), quantity.toInt())))
                         }
                     },
                     label = {
@@ -373,26 +390,6 @@ fun AddSalesScreen(navController:NavController,viewModel: AuthViewModel) {
 
                         if(!isLoading || !isLoadingStock) {
 
-                            if (stockToUpdate.any { it.first.stockName == productName }) {
-                                val existingStock =
-                                    stockToUpdate.firstOrNull { it.first.stockName == productName }
-
-                                existingStock?.let { (existingProduct, existingQuantity) ->
-                                    val newTotalQuantity = existingQuantity + quantity.toInt()
-
-                                    // Check if the new total quantity exceeds a certain limit
-                                    if (newTotalQuantity > stockSelected?.stockQuantity?.toInt()!!) {
-                                        Toast.makeText(
-                                            context,
-                                            "The quantity selected in your add list with this quantity is greater than stock quantity available",
-                                            Toast.LENGTH_LONG
-                                        ).show()
-                                        return@Button
-                                    }
-                                }
-                            }
-
-
                             if (!quantity.isInt()) {
                                 // Show a toast message indicating that the count is not an integer
                                 Toast.makeText(
@@ -403,10 +400,6 @@ fun AddSalesScreen(navController:NavController,viewModel: AuthViewModel) {
                                 return@Button
                             }
 
-                            if (customerName.isBlank()) {
-                                customerName = "Customer"
-                                return@Button
-                            }
                             if (stockSelected != null && stockSelected.stockQuantity?.toInt()!! < quantity.toInt()) {
                                 Toast.makeText(
                                     context,
@@ -416,12 +409,13 @@ fun AddSalesScreen(navController:NavController,viewModel: AuthViewModel) {
                                 return@Button
                             }
 
-                            if (customerName.isEmpty() || (productName.isEmpty() && stockToUpdate.isEmpty()) || (cost.isEmpty() && stockToUpdate.isEmpty()) || (totalCost.isEmpty() && stockToUpdate.isEmpty())) {
+                            if ((productName.isEmpty()) || (cost.isEmpty()) || (totalCost.isEmpty())) {
                                 Toast.makeText(
                                     context,
-                                    "Add a customer name and a product to make sales",
+                                    "Add a product to add to sales",
                                     Toast.LENGTH_LONG
                                 ).show()
+                                return@Button
                             }
 
                             else{
@@ -430,8 +424,8 @@ fun AddSalesScreen(navController:NavController,viewModel: AuthViewModel) {
                                 }
 
 
-                                var profit = cost.toInt()
-                                    ?.minus(stockSelected?.stockPurchasePrice?.toInt()!!)
+                                var profit = cost.toDouble()
+                                    ?.minus(stockSelected?.stockPurchasePrice?.toDouble()!!)
 
                                 val sale =
                                     SingleSale(
@@ -442,7 +436,8 @@ fun AddSalesScreen(navController:NavController,viewModel: AuthViewModel) {
                                         quantity = quantity,
                                         price = cost,
                                         totalPrice = totalCost,
-                                        profit = profit.toString()
+                                        profit = profit.toString(),
+                                        exist = exist
                                     )
 
                                 sales = listOf(AddSale(listOf(sale)))
@@ -465,7 +460,8 @@ fun AddSalesScreen(navController:NavController,viewModel: AuthViewModel) {
                                         .sumByDouble { it.quantity?.toDoubleOrNull() ?: 0.0 }
                                         .toString(),
                                     sale = selected!!,
-                                    stockQuantityList = stockToUpdate
+                                    stockQuantityList = stockToUpdate,
+                                    exist = exist
                                 ) {
 
 

@@ -2,12 +2,15 @@ package com.example.stocka.EditStockScreen
 
 import android.annotation.SuppressLint
 import android.os.Build
+import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIos
@@ -16,6 +19,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -41,6 +45,8 @@ fun EditStockInfoScreen(navController: NavController, viewModel: AuthViewModel) 
     val stock = viewModel.stockSelected.value
 
     val isLoading = viewModel.inProgress.value
+
+    val context = LocalContext.current
 
 
     var productName by remember {
@@ -161,7 +167,8 @@ fun EditStockInfoScreen(navController: NavController, viewModel: AuthViewModel) 
 
             Column(
                 modifier = Modifier.fillMaxSize()
-                    .padding(top = 20.dp),
+                    .padding(top = 20.dp)
+                    .verticalScroll(rememberScrollState()),
             ) {
 
                 OutlinedTextField(
@@ -322,30 +329,40 @@ fun EditStockInfoScreen(navController: NavController, viewModel: AuthViewModel) 
                 Button(
                     onClick = {
                         if (!isLoading) {
-                                viewModel.getStock(stock!!)
-                                navController.navigate(Destination.AddToStock.routes)
-                        }
-                    },
-                    shape = RoundedCornerShape(10.dp),
-                    modifier = Modifier
-                        .fillMaxWidth(0.7f)
-                        .height(50.dp)
-                        .align(Alignment.CenterHorizontally),
-                    colors = ButtonDefaults.buttonColors(ListOfColors.orange)
 
+                            if (stock?.stockSellingPrice!!.toDouble() < stock?.stockPurchasePrice!!.toDouble()) {
+                                Toast.makeText(
+                                    context,
+                                    "stock purchase price can't be greater than selling price",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                                return@Button
+                            }
 
-                ) {
-                    Text(
-                        text = "Add To Stock",
-                        color = ListOfColors.black
-                    )
-                }
-
-                Spacer(modifier = Modifier.padding(10.dp))
-
-                Button(
-                    onClick = {
-                        if (!isLoading) {
+                            if (!stock?.stockQuantitySold!!.isInt()) {
+                                // Show a toast message indicating that the count is not an integer
+                                Toast.makeText(
+                                    context,
+                                    "invalid value for stock quantity sold",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                                return@Button
+                            }
+                            if (!stock?.stockQuantity!!.isInt()) {
+                                // Show a toast message indicating that the count is not an integer
+                                Toast.makeText(
+                                    context,
+                                    "invalid value for stock quantity",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                                return@Button
+                            }
+                            if(stock?.stockQuantity!!.isEmpty()){
+                                viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockQuantity = "0")
+                            }
+                            if(stock?.stockQuantitySold!!.isEmpty()){
+                                viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockQuantitySold = "0")
+                            }
                             viewModel.updateStock(
                                 stock!!,
                                 viewModel.stockSelected.value!!.stockName.toString(),
@@ -389,6 +406,15 @@ fun EditStockInfoScreen(navController: NavController, viewModel: AuthViewModel) 
             )
         }
 
+    }
+}
+
+private fun String.isInt(): Boolean {
+    return try {
+        this.toInt()
+        true
+    } catch (e: NumberFormatException) {
+        false
     }
 }
 

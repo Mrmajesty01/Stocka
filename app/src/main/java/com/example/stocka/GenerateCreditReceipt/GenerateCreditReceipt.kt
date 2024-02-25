@@ -5,7 +5,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.Divider
@@ -225,100 +227,105 @@ fun GenerateCreditReceiptScreen(navController:NavController, viewModel: AuthView
 
                 Spacer(modifier = Modifier.padding(10.dp))
 
-                Box(
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(45.dp)
+                        .verticalScroll(rememberScrollState()),
                 ) {
 
-                    Text(
-                        text = "Total Quantity",
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.align(Alignment.TopStart)
-                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(45.dp)
+                    ) {
 
-                    Text(
-                        text = "Total Amount",
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.align(Alignment.TopEnd)
-                    )
+                        Text(
+                            text = "Total Quantity",
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.align(Alignment.TopStart)
+                        )
 
-                    Text(
-                        text = creditInfo!!.totalQuantity.toString(),
-                        modifier = Modifier.align(Alignment.BottomStart)
-                    )
+                        Text(
+                            text = "Total Amount",
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.align(Alignment.TopEnd)
+                        )
 
-                    Text(
-                        text = creditInfo.totalPrice.toString(),
-                        modifier = Modifier.align(Alignment.BottomEnd)
-                    )
+                        Text(
+                            text = creditInfo!!.totalQuantity.toString(),
+                            modifier = Modifier.align(Alignment.BottomStart)
+                        )
 
+                        Text(
+                            text = creditInfo.totalPrice.toString(),
+                            modifier = Modifier.align(Alignment.BottomEnd)
+                        )
+
+                    }
+
+
+                    Spacer(modifier = Modifier.padding(5.dp))
+
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(45.dp)
+                    ) {
+
+                        Text(
+                            text = "Amount Paid",
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.align(Alignment.TopEnd)
+                        )
+
+                        Text(
+                            text = creditInfo!!.amountPaid.toString(),
+                            modifier = Modifier.align(Alignment.BottomEnd)
+                        )
+
+                    }
+
+                    Spacer(modifier = Modifier.padding(5.dp))
+
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(45.dp)
+                    ) {
+
+                        Text(
+                            text = "Balance",
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.align(Alignment.TopEnd)
+                        )
+
+                        Text(
+                            text = creditInfo!!.balance.toString(),
+                            modifier = Modifier.align(Alignment.BottomEnd)
+                        )
+
+                    }
+
+
+                    Spacer(modifier = Modifier.padding(20.dp))
+
+                    Button(
+                        onClick = {},
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier
+                            .fillMaxWidth(0.7f)
+                            .height(50.dp)
+                            .align(Alignment.CenterHorizontally),
+                        colors = ButtonDefaults.buttonColors(ListOfColors.orange)
+                    ) {
+
+                        Text(
+                            text = "Print",
+                            color = ListOfColors.black
+                        )
+                    }
                 }
-
-
-                Spacer(modifier = Modifier.padding(5.dp))
-
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(45.dp)
-                ) {
-
-                    Text(
-                        text = "Amount Paid",
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.align(Alignment.TopEnd)
-                    )
-
-                    Text(
-                        text = creditInfo!!.amountPaid.toString(),
-                        modifier = Modifier.align(Alignment.BottomEnd)
-                    )
-
-                }
-
-                Spacer(modifier = Modifier.padding(5.dp))
-
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(45.dp)
-                ) {
-
-                    Text(
-                        text = "Balance",
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.align(Alignment.TopEnd)
-                    )
-
-                    Text(
-                        text = creditInfo!!.balance.toString(),
-                        modifier = Modifier.align(Alignment.BottomEnd)
-                    )
-
-                }
-
-
-                Spacer(modifier = Modifier.padding(20.dp))
-
-                Button(
-                    onClick = {},
-                    shape = RoundedCornerShape(10.dp),
-                    modifier = Modifier
-                        .fillMaxWidth(0.7f)
-                        .height(50.dp)
-                        .align(Alignment.CenterHorizontally),
-                    colors = ButtonDefaults.buttonColors(ListOfColors.orange)
-                ) {
-
-                    Text(
-                        text = "Print",
-                        color = ListOfColors.black
-                    )
-                }
-
             }
         }
 

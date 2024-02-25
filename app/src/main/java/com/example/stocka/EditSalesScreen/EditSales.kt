@@ -324,8 +324,16 @@ fun EditSalesScreen(navController: NavController, viewModel: AuthViewModel) {
 
                         if(!isLoadingUpdate || !isLoadingDelete || !isLoadingStock || !isLodingSale ) {
                             if (single != null) {
-                                val profit = (viewModel.singleSaleSelected.value!!.price!!.toInt()
-                                    .minus(stockSelected?.stockPurchasePrice?.toInt()!!)).toString()
+
+                                val profit = viewModel.singleSaleSelected.value?.let { sale ->
+                                    val salePrice = sale.price?.toDouble() ?: 0.0
+                                    val purchasePrice = stockSelected?.stockPurchasePrice?.toDouble()
+
+                                    (purchasePrice ?: salePrice).let { finalPrice ->
+                                        (salePrice - finalPrice).toString()
+                                    }
+                                } ?: "0.0"
+
                                 viewModel.updateSale(
                                     customerName = single.customerName.toString(),
                                     customerId = selected?.customerId.toString(),
@@ -336,12 +344,14 @@ fun EditSalesScreen(navController: NavController, viewModel: AuthViewModel) {
                                     profit = profit,
                                     saleId = selected?.salesId.toString(),
                                     singleSaleId = single.saleId.toString(),
-                                    stockId = stockSelected.stockId.toString(),
+                                    stockId = if (stockSelected!=null) stockSelected!!.stockId else "",
                                     saleDiff = (single.totalPrice?.toDouble()!! - unmodified!!.totalPrice!!.toDouble()).toString(),
-                                    profitDiff = ((profit.toInt() * single.quantity!!.toInt()) - unmodified?.profit!!.toInt()).toString(),
+                                    profitDiff = ((profit.toDouble() * single.quantity!!.toDouble()) - unmodified?.profit!!.toDouble()).toString(),
                                     sale = selected!!,
-                                    singleSale = single
+                                    singleSale = single,
+                                    exist = single.exist.toString()
                                 ) {
+                                    viewModel.stockSelected.value = null
                                     viewModel.unmodifiedSingle.value = null
                                     viewModel.singleSaleSelected.value = null
                                     if (selected.type == "SR" && from == "saleInfoHome") {
@@ -391,8 +401,10 @@ fun EditSalesScreen(navController: NavController, viewModel: AuthViewModel) {
                             if (single != null) {
                                 viewModel.deleteSingleSale(
                                     selected?.salesId.toString(),
-                                    single.saleId.toString()
+                                    single.saleId.toString(),
+                                    single.exist.toString()
                                 ) {
+                                    viewModel.stockSelected.value = null
                                     if (selected!!.type == "SR" && from == "saleInfoHome") {
                                         viewModel.getSale(selected.salesId.toString())
                                         navigateTo(navController, Destination.SalesInfoHome)
