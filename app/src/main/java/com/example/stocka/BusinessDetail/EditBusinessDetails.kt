@@ -5,8 +5,10 @@ import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -123,6 +125,7 @@ fun EditBusinessDetailsScreen(navController: NavController, viewModel: AuthViewM
             Column(
                 modifier = Modifier.fillMaxSize()
                     .padding(top = 20.dp)
+                    .verticalScroll(rememberScrollState()),
             ) {
 
 

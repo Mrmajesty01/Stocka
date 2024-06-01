@@ -387,7 +387,11 @@ fun AddToStockScreen(navController: NavController, viewModel:AuthViewModel) {
                                 oneWeekToExpiry.toString()
                             ) {
                                 viewModel.getStock(stock)
-                                navController.navigate(Destination.StockInfo.routes)
+                                navController.navigate(Destination.StockInfo.routes){
+                                    popUpTo(Destination.StockInfo.routes){
+                                        inclusive = true
+                                    }
+                                }
                             }
                         }
                     },

@@ -46,7 +46,11 @@ fun EditStockInfoScreen(navController: NavController, viewModel: AuthViewModel) 
 
     val isLoading = viewModel.inProgress.value
 
+
+    val features = viewModel.featuresToPin.value
+
     val context = LocalContext.current
+
 
 
     var productName by remember {
@@ -376,7 +380,11 @@ fun EditStockInfoScreen(navController: NavController, viewModel: AuthViewModel) 
                                 oneWeekToExpiry.toString()
                             ) {
                                 viewModel.getStock(stock)
-                                navController.navigate(Destination.StockInfo.routes)
+                                navController.navigate(Destination.StockInfo.routes){
+                                    popUpTo(Destination.StockInfo.routes){
+                                        inclusive = true
+                                    }
+                                }
                             }
                         }
                     },

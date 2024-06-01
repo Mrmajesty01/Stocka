@@ -13,12 +13,18 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.Button
+import androidx.compose.material.ButtonDefaults
+import androidx.compose.material.DropdownMenu
+import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.Text
@@ -27,6 +33,7 @@ import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIos
 import androidx.compose.material.icons.filled.Cancel
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -49,6 +56,7 @@ import androidx.navigation.NavController
 import com.example.stocka.AddExpenseScreen.ExpenseItem
 import com.example.stocka.Navigation.Destination
 import com.example.stocka.Viemodel.AuthViewModel
+import com.example.stocka.main.CommonProgressSpinner
 import com.example.stocka.main.navigateTo
 import com.example.stocka.ui.theme.ListOfColors
 
@@ -59,6 +67,8 @@ fun ExpenseScreen(navController:NavController,viewModel: AuthViewModel){
 
 
     val focus = LocalFocusManager.current
+    var expanded by remember { mutableStateOf(false) }
+    var selectedItem by remember { mutableStateOf("") }
     val searchExpenseLoading = viewModel.expenseProgress.value
     val searchedExpense = viewModel.expenseData.value
     val expenses = viewModel.expenseData.value
@@ -67,6 +77,97 @@ fun ExpenseScreen(navController:NavController,viewModel: AuthViewModel){
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
+
+
+
+        Box(
+            modifier = Modifier.wrapContentHeight(),
+            contentAlignment = Alignment.TopCenter // Aligning content to the top end
+        ) {
+
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+                modifier = Modifier.width(250.dp)
+            ) {
+                Column {
+                    Text(
+                        text = "Search by:",
+                        modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 4.dp),
+                        fontWeight = FontWeight.Bold
+                    )
+                    DropdownMenuItem(onClick = {
+                        selectedItem = "Expense Name"
+                    }) {
+                        Text(
+                            "Expense Name",
+                            fontWeight = if (selectedItem == "Expense Name") FontWeight.Bold else null
+                        )
+                    }
+
+                    DropdownMenuItem(onClick = {
+                        selectedItem = "Expense Category"
+                    }) {
+                        Text(
+                            "Expense Category",
+                            fontWeight = if (selectedItem == "Expense Category") FontWeight.Bold else null
+                        )
+                    }
+
+                    DropdownMenuItem(onClick = {
+                        selectedItem = "Expense Description"
+                    }) {
+                        Text(
+                            "Expense Description",
+                            fontWeight = if (selectedItem == "Expense Description") FontWeight.Bold else null
+                        )
+                    }
+
+                    DropdownMenuItem(onClick = {
+                        selectedItem = "Expense Amount"
+                    }) {
+                        Text(
+                            "Expense Amount",
+                            fontWeight = if (selectedItem == "Expense Amount") FontWeight.Bold else null
+                        )
+                    }
+
+
+                    androidx.compose.material.Divider()
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Button(
+                            onClick = {
+                                expanded = false
+                                selectedItem = ""
+                                viewModel.retrieveExpense()
+                            },
+                            modifier = Modifier.wrapContentHeight()
+                                .wrapContentWidth(),
+                            colors = ButtonDefaults.buttonColors(backgroundColor = ListOfColors.lightRed)
+                        ) {
+                            Text("Cancel")
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Button(
+                            onClick = {
+                                expanded = false
+                            },
+                            modifier = Modifier.wrapContentHeight()
+                                .wrapContentWidth(),
+                            colors = ButtonDefaults.buttonColors(backgroundColor = ListOfColors.orange)
+                        ) {
+                            Text("Apply")
+                        }
+                    }
+                }
+            }
+        }
+
+
         Column(modifier = Modifier.fillMaxSize()) {
 
             Row(
@@ -111,62 +212,98 @@ fun ExpenseScreen(navController:NavController,viewModel: AuthViewModel){
                     )
             ) {
 
-                TextField(
-                    value = searchValue,
-                    onValueChange = {
-                        searchValue = it
-                        viewModel.expenseSearchWhenTyping(searchValue)
-                    },
-                    label = {
-                        Text(text = "Search for expense")
-                    },
-                    modifier = Modifier
-                        .padding(8.dp)
-                        .fillMaxWidth()
-                        .border(1.dp, Color.LightGray, CircleShape),
-                    shape = CircleShape,
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Text,
-                        imeAction = ImeAction.Search
-                    ),
-                    keyboardActions = KeyboardActions(
-                        onSearch = {
-                            viewModel.expenseSearch(searchValue)
-                            focus.clearFocus()
-                        }
-                    ),
-                    maxLines = 1,
-                    singleLine = true,
-                    colors = TextFieldDefaults.textFieldColors(
-                        backgroundColor = Color.Transparent,
-                        textColor = Color.Black,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        disabledIndicatorColor = Color.Transparent
-                    ),
-                    leadingIcon = {
-                        IconButton(onClick = {
-                            searchValue = ""
-                            viewModel.retrieveExpense()
-                            focus.clearFocus()
-                        }) {
-                            if (searchValue.isEmpty()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.End
+                ) {
 
-                            } else {
-                                Icon(imageVector = Icons.Filled.Cancel, contentDescription = null)
+                    TextField(
+                        value = searchValue,
+                        onValueChange = {
+                            searchValue = it
+                            if (selectedItem.isNotBlank()) {
+                                when (selectedItem) {
+                                    "Expense Name" -> viewModel.expenseSearchWhenTypingByName(searchValue)
+                                    "Expense Category" -> viewModel.expenseSearchWhenTypingByCategory(searchValue)
+                                    "Expense Description" -> viewModel.expenseSearchWhenTypingByDescription(searchValue)
+                                    "Expense Amount" -> viewModel.expenseSearchWhenTypingByAmount(searchValue)
+                                }
+                            }
+                        },
+                        label = {
+                            Text(text = "Search for expense")
+                        },
+                        modifier = Modifier
+                            .padding(8.dp)
+                            .border(1.dp, Color.LightGray, CircleShape),
+                        shape = CircleShape,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Text,
+                            imeAction = ImeAction.Search
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onSearch = {
+                                if (selectedItem.isNotBlank()) {
+                                    when (selectedItem) {
+                                        "Expense Name" -> viewModel.expenseSearchByName(searchValue)
+                                        "Expense Category" -> viewModel.expenseSearchByCategory(searchValue)
+                                        "Expense Description" -> viewModel.expenseSearchByDescription(searchValue)
+                                        "Expense Amount" -> viewModel.expenseSearchByAmount(searchValue)
+                                    }
+                                }
+                                focus.clearFocus()
+                            }
+                        ),
+                        maxLines = 1,
+                        singleLine = true,
+                        colors = TextFieldDefaults.textFieldColors(
+                            backgroundColor = Color.Transparent,
+                            textColor = Color.Black,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent,
+                            disabledIndicatorColor = Color.Transparent
+                        ),
+                        leadingIcon = {
+                            IconButton(onClick = {
+                                searchValue = ""
+                                viewModel.retrieveExpense()
+                                focus.clearFocus()
+                            }) {
+                                if (searchValue.isEmpty()) {
+
+                                } else {
+                                    Icon(
+                                        imageVector = Icons.Filled.Cancel,
+                                        contentDescription = null
+                                    )
+                                }
+                            }
+                        },
+                        trailingIcon = {
+                            IconButton(onClick = {
+                                if (selectedItem.isNotBlank()) {
+                                    when (selectedItem) {
+                                        "Expense Name" -> viewModel.expenseSearchByName(searchValue)
+                                        "Expense Category" -> viewModel.expenseSearchByCategory(searchValue)
+                                        "Expense Description" -> viewModel.expenseSearchByDescription(searchValue)
+                                        "Expense Amount" -> viewModel.expenseSearchByAmount(searchValue)
+                                    }
+                                }
+                                focus.clearFocus()
+                            }) {
+                                Icon(imageVector = Icons.Filled.Search, contentDescription = null)
                             }
                         }
-                    },
-                    trailingIcon = {
-                        IconButton(onClick = {
-                            viewModel.expenseSearch(searchValue)
-                            focus.clearFocus()
-                        }) {
-                            Icon(imageVector = Icons.Filled.Search , contentDescription = null )
-                        }
-                    }
+                    )
 
-                )
+                    IconButton(
+                        onClick = { expanded = true },
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.FilterList, contentDescription = "filterIcon")
+                    }
+                }
 
                 Spacer(modifier = Modifier.padding(5.dp))
 
@@ -224,6 +361,11 @@ fun ExpenseScreen(navController:NavController,viewModel: AuthViewModel){
                 }
 
             }
+
+        if (searchExpenseLoading) {
+            CommonProgressSpinner()
+        }
+
         }
     }
 

@@ -1,6 +1,7 @@
 package com.example.stocka.HomeScreen
 
 import android.annotation.SuppressLint
+import android.widget.Toast
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -8,19 +9,24 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
@@ -44,20 +50,294 @@ import java.util.Locale
 fun HomeScreen(navController: NavController, viewModel: AuthViewModel) {
 
 
+    val context = LocalContext.current
     val userData = viewModel.userData.value
     val isLoading = viewModel.inProgress.value
+    val isLoadingFeatures = viewModel.inProgressFeaturesToPin.value
     var sales = viewModel.salesHomeData.value
     var expenses = viewModel.expenseHomeData.value
     val businessName = if (userData?.businessName == null) "" else userData.businessName
     val lazyListState = rememberLazyListState()
 
-    val totalSales = userData?.totalSales?.toDoubleOrNull() ?: 0.0
+    val features = viewModel.featuresToPin.value
+
+    val paymentDue = viewModel.paymentDue.value
+
+    val totalSales = viewModel.saleReceiptTotalToday.value+viewModel.creditReceiptTotalToday.value
     val totalExpenses = userData?.totalExpenses?.toDoubleOrNull() ?: 0.0
     val totalProfit = userData?.totalProfit?.toDoubleOrNull() ?: 0.0
 
-    val formattedTotalSales = formatNumberWithDelimiter(totalSales)
-    val formattedTotalExpenses = formatNumberWithDelimiter(totalExpenses)
-    val formattedTotalProfit = formatNumberWithDelimiter(totalProfit)
+    val profit = viewModel.totalProfitToday.value
+    val expense = viewModel.totalExpenseToday.value
+
+    var totalSalesHidden by remember {
+        mutableStateOf(true)
+    }
+
+    var totalExpensesHidden by remember {
+        mutableStateOf(true)
+    }
+
+    var totalProfitHidden by remember {
+        mutableStateOf(true)
+    }
+
+    var dailyReportHidden by remember{
+        mutableStateOf(true)
+    }
+
+//
+//    // If features have not been updated from the default state, set a default value for safety
+//    if (!features.TotalSales) {
+//        totalSalesHidden = true // Default to hidden if TotalSales is false (initial state)
+//    }
+
+    LaunchedEffect(features){
+        totalSalesHidden = viewModel.featuresToPin.value.TotalSales
+        totalExpensesHidden = viewModel.featuresToPin.value.TotalExpenses
+        totalProfitHidden = viewModel.featuresToPin.value.TotalProfit
+        dailyReportHidden = viewModel.featuresToPin.value.DailyReport
+    }
+
+    // Adjust totalSalesHidden if features change (ensures updated state)
+
+
+
+    var formattedTotalSales = formatNumberWithDelimiter(totalSales)
+
+    var formattedTotalExpenses = formatNumberWithDelimiter(expense)
+    var formattedTotalProfit = formatNumberWithDelimiter(profit)
+
+
+    if(paymentDue){
+        navController.navigate(Destination.CheckOutPayment.routes)
+    }
+
+
+
+    var openDialogSales by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    var openDialogExpenses by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    var openDialogProfit by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    var openDialogReport by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    var pin by remember { mutableStateOf(TextFieldValue()) }
+
+
+    if(openDialogSales){
+        AlertDialog(
+            onDismissRequest = {
+                openDialogSales = false
+                pin = TextFieldValue("")
+           },
+
+            title = {
+                Text(text = "View Total Sales Today")
+            },
+
+            text = {
+                Column {
+                    // Add an EditText for PIN input
+                    OutlinedTextField(
+                        value = pin,
+                        onValueChange = {
+                            pin = it
+                        },
+                        label = { Text("Enter PIN To View Sales") },
+                        keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.NumberPassword),
+                    )
+                }
+            },
+
+            confirmButton = {
+                TextButton(onClick = {
+                    if(pin.text.toInt() == userData?.pin?.toInt()) {
+                        openDialogSales = false
+                        totalSalesHidden = false
+                        pin = TextFieldValue("")
+                    }
+                    else{
+                        Toast.makeText(context, "wrong pin try again", Toast.LENGTH_LONG).show()
+                    }
+                }) {
+                    Text(text = "Yes")
+                }
+            },
+
+            dismissButton = {
+                TextButton(onClick = {
+                    openDialogSales = false
+                }) {
+                    Text(text = "No")
+                }
+            },
+        )
+    }
+
+    if(openDialogExpenses){
+        AlertDialog(
+            onDismissRequest = {
+                openDialogExpenses = false
+                pin = TextFieldValue("")
+            },
+
+            title = {
+                Text(text = "View Total Expenses Today")
+            },
+
+            text = {
+                Column {
+                    // Add an EditText for PIN input
+                    OutlinedTextField(
+                        value = pin,
+                        onValueChange = {
+                            pin = it
+                        },
+                        label = { Text("Enter PIN To View Expenses") },
+                        keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.NumberPassword),
+                    )
+                }
+            },
+
+            confirmButton = {
+                TextButton(onClick = {
+                    if(pin.text.toInt() == userData?.pin?.toInt()) {
+                        openDialogExpenses = false
+                        totalExpensesHidden = false
+                        pin = TextFieldValue("")
+                    }
+                    else{
+                        Toast.makeText(context, "wrong pin try again", Toast.LENGTH_LONG).show()
+                    }
+                }) {
+                    Text(text = "Yes")
+                }
+            },
+
+            dismissButton = {
+                TextButton(onClick = {
+                    openDialogExpenses = false
+                }) {
+                    Text(text = "No")
+                }
+            },
+        )
+    }
+
+    if(openDialogProfit){
+        AlertDialog(
+            onDismissRequest = {
+                openDialogProfit = false
+                pin = TextFieldValue("")
+            },
+
+            title = {
+                Text(text = "View Total Profit Today")
+            },
+
+            text = {
+                Column {
+                    // Add an EditText for PIN input
+                    OutlinedTextField(
+                        value = pin,
+                        onValueChange = {
+                            pin = it
+                        },
+                        label = { Text("Enter PIN To View Profit") },
+                        keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.NumberPassword),
+                    )
+                }
+            },
+
+            confirmButton = {
+                TextButton(onClick = {
+                    if(pin.text.toInt() == userData?.pin?.toInt()) {
+                        openDialogProfit = false
+                        totalProfitHidden = false
+                        pin = TextFieldValue("")
+                    }
+                    else{
+                        Toast.makeText(context, "wrong pin try again", Toast.LENGTH_LONG).show()
+                    }
+                }) {
+                    Text(text = "Yes")
+                }
+            },
+
+            dismissButton = {
+                TextButton(onClick = {
+                    openDialogProfit = false
+                }) {
+                    Text(text = "No")
+                }
+            },
+        )
+    }
+
+    if(openDialogReport){
+        AlertDialog(
+            onDismissRequest = {
+                openDialogReport = false
+                pin = TextFieldValue("")
+            },
+
+            title = {
+                Text(text = "View Daily Report")
+            },
+
+            text = {
+                Column {
+                    // Add an EditText for PIN input
+                    OutlinedTextField(
+                        value = pin,
+                        onValueChange = {
+                            pin = it
+                        },
+                        label = { Text("Enter PIN To View Daily Report") },
+                        keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.NumberPassword),
+                    )
+                }
+            },
+
+            confirmButton = {
+                TextButton(onClick = {
+                    if(pin.text.toInt() == userData?.pin?.toInt()) {
+                        viewModel.getTotalSaleReceiptToday()
+                        viewModel.getTotalCreditReceiptToday()
+                        viewModel.getMostPurchasedProductsToday()
+                        navController.navigate(Destination.DailyReport.routes)
+                        openDialogReport = false
+                        dailyReportHidden = false
+                        pin = TextFieldValue("")
+                    }
+                    else{
+                        Toast.makeText(context, "wrong pin try again", Toast.LENGTH_LONG).show()
+                    }
+                }) {
+                    Text(text = "Yes")
+                }
+            },
+
+            dismissButton = {
+                TextButton(onClick = {
+                    openDialogReport = false
+                }) {
+                    Text(text = "No")
+                }
+            },
+        )
+    }
+
 
     var state by remember {
         mutableStateOf(0)
@@ -130,10 +410,15 @@ fun HomeScreen(navController: NavController, viewModel: AuthViewModel) {
                         .fillMaxWidth()
                         .clickable {
                             if (!isLoading) {
-                                viewModel.getTotalSaleReceiptToday()
-                                viewModel.getTotalCreditReceiptToday()
-                                viewModel.getMostPurchasedProductsToday()
-                                navController.navigate(Destination.DailyReport.routes)
+                                if(dailyReportHidden) {
+                                    openDialogReport = true
+                                }
+                                else{
+                                    viewModel.getTotalSaleReceiptToday()
+                                    viewModel.getTotalCreditReceiptToday()
+                                    viewModel.getMostPurchasedProductsToday()
+                                    navController.navigate(Destination.DailyReport.routes)
+                                }
                             }
                         }
                         .align(Alignment.CenterHorizontally),
@@ -182,7 +467,6 @@ fun HomeScreen(navController: NavController, viewModel: AuthViewModel) {
                                     fontStyle = FontStyle.Italic,
                                     color = ListOfColors.matteBlack
                                 )
-
                             }
                         }
 
@@ -192,36 +476,59 @@ fun HomeScreen(navController: NavController, viewModel: AuthViewModel) {
 
                             0 -> {
                                 Text(
-                                    text = "₦$formattedTotalSales",
+                                    text = if (totalSalesHidden)  "*****"  else "₦$formattedTotalSales",
                                     fontSize = 20.sp,
                                     fontWeight = FontWeight.ExtraBold,
                                     fontStyle = FontStyle.Italic,
-                                    color = ListOfColors.matteBlack
-
+                                    color = ListOfColors.matteBlack,
+                                    modifier = Modifier.clickable {
+                                        if (totalSalesHidden) {
+                                            openDialogSales = true
+                                        }
+                                        else {
+                                            // If revealed, hide the total sales
+                                            totalSalesHidden = true
+                                        }
+                                    }
                                 )
                             }
 
                             1 -> {
                                 Text(
-                                    text = "₦$formattedTotalExpenses",
+                                    text = if (totalExpensesHidden) "*****" else "₦$formattedTotalExpenses",
                                     fontSize = 20.sp,
                                     fontWeight = FontWeight.ExtraBold,
                                     fontStyle = FontStyle.Italic,
-                                    color = ListOfColors.matteBlack
-
-                                )
+                                    color = ListOfColors.matteBlack,
+                                    modifier = Modifier.clickable{
+                                        if (totalExpensesHidden) {
+                                            openDialogExpenses = true
+                                        }
+                                        else {
+                                            // If revealed, hide the total sales
+                                            totalExpensesHidden = true
+                                        }
+                                    }
+                                ) 
                             }
 
                             2 -> {
                                 Text(
-                                    text = "₦$formattedTotalProfit",
+                                    text = if (totalProfitHidden) "*****" else "₦$formattedTotalProfit",
                                     fontSize = 20.sp,
                                     fontWeight = FontWeight.ExtraBold,
                                     fontStyle = FontStyle.Italic,
-                                    color = ListOfColors.matteBlack
-
+                                    color = ListOfColors.matteBlack,
+                                    modifier = Modifier.clickable{
+                                        if (totalProfitHidden) {
+                                            openDialogProfit = true
+                                        }
+                                        else {
+                                            // If revealed, hide the total sales
+                                            totalProfitHidden = true
+                                        }
+                                    }
                                 )
-
                             }
 
                         }

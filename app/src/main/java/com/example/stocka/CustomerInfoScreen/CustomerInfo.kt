@@ -44,9 +44,26 @@ fun CustomerInfoScreen(
     var openDialog by rememberSaveable {
         mutableStateOf(false)
     }
+    var openDialogDelete by rememberSaveable {
+        mutableStateOf(false)
+    }
     var pin by remember { mutableStateOf(TextFieldValue()) }
     val userData = viewModel.userData.value
     val context = LocalContext.current
+    val features = viewModel.featuresToPin.value
+
+    var editCustomerHidden by remember {
+        mutableStateOf(true)
+    }
+
+    var deleteCustomerHidden by remember {
+        mutableStateOf(true)
+    }
+
+    LaunchedEffect(features){
+        editCustomerHidden = viewModel.featuresToPin.value.EditCustomers
+        deleteCustomerHidden = viewModel.featuresToPin.value.DeleteCustomers
+    }
 
     var customerBalance = customer?.customerBalance?.toDoubleOrNull() ?: 0.0
 
@@ -84,7 +101,7 @@ fun CustomerInfoScreen(
                             onValueChange = {
                                 pin = it
                             },
-                            label = { Text("Enter PIN TO EDIT") },
+                            label = { Text("Enter PIN To EDIT") },
                             keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.NumberPassword),
                         )
                     }
@@ -93,6 +110,7 @@ fun CustomerInfoScreen(
                 confirmButton = {
                     TextButton(onClick = {
                         if(pin.text.toInt() == userData?.pin?.toInt()) {
+                            editCustomerHidden = false
                             openDialogEdit = false
                             viewModel.getCustomer(customer!!)
                             navController.navigate(Destination.EditCustomer.routes)
@@ -144,6 +162,7 @@ fun CustomerInfoScreen(
                     TextButton(onClick = {
                         if(pin.text.toInt() == userData?.pin?.toInt()) {
                             openDialog = false
+                            deleteCustomerHidden = false
                             viewModel.deleteCustomer(customer!!.customerId.toString()) {
                                 navController.navigate(Destination.Customers.routes)
                             }
@@ -159,6 +178,39 @@ fun CustomerInfoScreen(
                 dismissButton = {
                     TextButton(onClick = {
                         openDialog = false
+                    }) {
+                        Text(text = "No")
+                    }
+                },
+            )
+        }
+
+        if(openDialogDelete){
+            AlertDialog(
+                onDismissRequest = { openDialogDelete = false },
+
+                title = {
+                    Text(text = "Delete Customer")
+                },
+
+                text = {
+                    Text(text = "Are you sure you want to delete ${customer!!.customerName} from customers ?")
+                },
+
+                confirmButton = {
+                    TextButton(onClick = {
+                        openDialogDelete = false
+                        viewModel.deleteCustomer(customer!!.customerId.toString()) {
+                            navController.navigate(Destination.Customers.routes)
+                        }
+                    }) {
+                        Text(text = "Yes")
+                    }
+                },
+
+                dismissButton = {
+                    TextButton(onClick = {
+                        openDialogDelete = false
                     }) {
                         Text(text = "No")
                     }
@@ -185,7 +237,7 @@ fun CustomerInfoScreen(
                         .align(Alignment.CenterStart)
                         .clickable {
                             if (!isLoading || !isLoadingDelete) {
-                                navController.navigate(Destination.Customers.routes)
+                                navController.popBackStack()
                             }
                         },
                     tint = ListOfColors.black
@@ -336,7 +388,14 @@ fun CustomerInfoScreen(
                 Button(
                     onClick = {
                         if (!isLoading || !isLoadingDelete) {
-                            openDialogEdit = true
+                            if(editCustomerHidden) {
+                                openDialogEdit = true
+                            }
+
+                            else{
+                                viewModel.getCustomer(customer!!)
+                                navController.navigate(Destination.EditCustomer.routes)
+                            }
                         }
                     },
                     shape = RoundedCornerShape(10.dp),
@@ -362,7 +421,12 @@ fun CustomerInfoScreen(
             Button(
                 onClick = {
                     if (!isLoading || !isLoadingDelete) {
-                       openDialog = true
+                        if(deleteCustomerHidden) {
+                            openDialog = true
+                        }
+                        else{
+                            openDialogDelete = true
+                        }
                     }
                 },
                 shape = RoundedCornerShape(10.dp),

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Divider
 import androidx.compose.material.DropdownMenu
 import androidx.compose.material.DropdownMenuItem
@@ -44,15 +45,15 @@ import java.util.Date
 
 @Composable
 
-fun DailyReportScreen(navController: NavController, viewModel:AuthViewModel){
+fun DailyReportScreen(navController: NavController, viewModel:AuthViewModel) {
 
     val saleReceiptTotal = viewModel.saleReceiptTotalToday.value
     val creditReceiptTotal = viewModel.creditReceiptTotalToday.value
     var mostBoughtProduct = viewModel.mostBoughtGoodToday.value
     var mostBoughtProductQty = viewModel.mostBoughtGoodQuantity.value
+    var goodsSold = viewModel.goodsSold.value
     val userData = viewModel.userData.value
-
-
+    val loading = viewModel.dailyReportProgress.value
 
 
     var expanded by remember { mutableStateOf(false) }
@@ -65,8 +66,8 @@ fun DailyReportScreen(navController: NavController, viewModel:AuthViewModel){
 
 
     var formattedDate = userData?.currentDate?.let {
-            SimpleDateFormat("dd MMM yyyy").format(Date(it))
-        } ?: ""
+        SimpleDateFormat("dd MMM yyyy").format(Date(it))
+    } ?: ""
 
 
     val totalSalesFilter = viewModel.totalSalesFilter.value
@@ -78,9 +79,9 @@ fun DailyReportScreen(navController: NavController, viewModel:AuthViewModel){
     val mostSoldGoodFilter = viewModel.mostBoughtGoodFilter.value
     val mostSoldGoodQtyFilter = viewModel.mostBoughtGoodQuantityFilter.value
 
-    val profitAfterExpense = userData!!.totalProfit!!.toDouble()-userData.totalExpenses!!.toDouble()
+    val profitAfterExpense = viewModel.totalProfitToday.value - viewModel.totalExpenseToday.value
 
-    val totalSales = userData?.totalSales?.toDoubleOrNull() ?: 0.0
+    val totalSales = viewModel.AllsalesTotalToday.value
     val totalExpenses = userData?.totalExpenses?.toDoubleOrNull() ?: 0.0
     val totalProfit = userData?.totalProfit?.toDoubleOrNull() ?: 0.0
 
@@ -92,26 +93,36 @@ fun DailyReportScreen(navController: NavController, viewModel:AuthViewModel){
     var formattedProfitAfterExpense = formatNumberWithDelimiter(profitAfterExpense)
 
 
-    if(selectedOption!="Today"){
+    if (selectedOption != "Today") {
         date = selectedOption
         formattedDate = selectedOption
-        formattedSaleReceiptTotal= formatNumberWithDelimiter(totalSaleReceiptFilter)
+        formattedSaleReceiptTotal = formatNumberWithDelimiter(totalSaleReceiptFilter)
         formattedCreditReceiptTotal = formatNumberWithDelimiter(totalCreditFilter)
         formattedTotalSales = formatNumberWithDelimiter(totalSalesFilter)
         formattedTotalProfit = formatNumberWithDelimiter(totalProfitFilter)
         formattedTotalExpenses = formatNumberWithDelimiter(totalExpenseFilter)
         formattedProfitAfterExpense = formatNumberWithDelimiter(totalProfitAfterExpenseFilter)
-        mostBoughtProduct = mostSoldGoodFilter
-        mostBoughtProductQty = mostSoldGoodQtyFilter
+//        mostBoughtProduct = mostSoldGoodFilter
+//        mostBoughtProductQty = mostSoldGoodQtyFilter
 
-    }
-    else{
+    } else {
         date = "Today's Date"
+        viewModel.getMostPurchasedProductsToday()
     }
 
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
+
+        if (loading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.LightGray.copy(alpha = 0.5f))
+                    .clickable {}
+            )
+        }
+
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
@@ -130,7 +141,9 @@ fun DailyReportScreen(navController: NavController, viewModel:AuthViewModel){
                         .padding(start = 5.dp)
                         .size(15.dp)
                         .clickable {
-                            navController.popBackStack()
+                            if (!loading) {
+                                navController.popBackStack()
+                            }
                         },
                     tint = ListOfColors.black
                 )
@@ -195,7 +208,7 @@ fun DailyReportScreen(navController: NavController, viewModel:AuthViewModel){
                     onDismissRequest = { expanded = false },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .background(color = Color.LightGray)
+                        .background(Color.White)
                 ) {
                     options.forEachIndexed { index, option ->
                         DropdownMenuItem(
@@ -207,13 +220,6 @@ fun DailyReportScreen(navController: NavController, viewModel:AuthViewModel){
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .background(
-                                    if (index == selectedIndex) {
-                                        Color.White
-                                    } else {
-                                        Color.Transparent
-                                    }
-                                )
                         ) {
                             Text(text = option, color = Color.Black)
                         }
@@ -235,7 +241,7 @@ fun DailyReportScreen(navController: NavController, viewModel:AuthViewModel){
                         modifier = Modifier.align(Alignment.TopCenter)
                     )
 
-                    if(date == "Today's Date") {
+                    if (date == "Today's Date") {
 
                         Text(
                             text = formattedDate,
@@ -247,7 +253,7 @@ fun DailyReportScreen(navController: NavController, viewModel:AuthViewModel){
                 }
 
 
-                Icon(imageVector = Icons.Default.FilterList, contentDescription ="filterList",
+                Icon(imageVector = Icons.Default.FilterList, contentDescription = "filterList",
                     modifier = Modifier
                         .align(Alignment.End)
                         .clickable {
@@ -269,14 +275,13 @@ fun DailyReportScreen(navController: NavController, viewModel:AuthViewModel){
                 )
                 {
 
-                    if(date ==  "Today's Date") {
+                    if (date == "Today's Date") {
                         Text(
                             text = "Total Sales Today",
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.align(Alignment.TopStart)
                         )
-                    }
-                    else{
+                    } else {
                         Text(
                             text = "Total Sales",
                             fontWeight = FontWeight.Bold,
@@ -285,15 +290,13 @@ fun DailyReportScreen(navController: NavController, viewModel:AuthViewModel){
                     }
 
 
-                    if(date ==  "Today's Date") {
+                    if (date == "Today's Date") {
                         Text(
                             text = "Total Profit Today",
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.align(Alignment.TopEnd)
                         )
-                    }
-                    else
-                    {
+                    } else {
                         Text(
                             text = "Total Profit",
                             fontWeight = FontWeight.Bold,
@@ -322,14 +325,13 @@ fun DailyReportScreen(navController: NavController, viewModel:AuthViewModel){
                 )
                 {
 
-                    if(date ==  "Today's Date") {
+                    if (date == "Today's Date") {
                         Text(
                             text = "Sales Receipt Total",
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.align(Alignment.TopStart)
                         )
-                    }
-                    else{
+                    } else {
                         Text(
                             text = "Sales Receipt Total",
                             fontWeight = FontWeight.Bold,
@@ -337,14 +339,13 @@ fun DailyReportScreen(navController: NavController, viewModel:AuthViewModel){
                         )
                     }
 
-                    if(date ==  "Today's Date") {
+                    if (date == "Today's Date") {
                         Text(
                             text = "Credit Receipt Total",
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.align(Alignment.TopEnd)
                         )
-                    }
-                    else{
+                    } else {
                         Text(
                             text = "Credit Receipt Total",
                             fontWeight = FontWeight.Bold,
@@ -372,7 +373,13 @@ fun DailyReportScreen(navController: NavController, viewModel:AuthViewModel){
                 )
                 {
 
-                    if(date ==  "Today's Date") {
+                    if (date == "Today's Date") {
+                        Text(
+                            text = "Total Expenses",
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.align(Alignment.TopStart)
+                        )
+                    } else {
                         Text(
                             text = "Total Expenses",
                             fontWeight = FontWeight.Bold,
@@ -380,22 +387,13 @@ fun DailyReportScreen(navController: NavController, viewModel:AuthViewModel){
                         )
                     }
 
-                    else{
-                        Text(
-                            text = "Total Expenses",
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.align(Alignment.TopStart)
-                        )
-                    }
-
-                    if(date ==  "Today's Date") {
+                    if (date == "Today's Date") {
                         Text(
                             text = "Total Profit After Expenses",
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.align(Alignment.TopEnd)
                         )
-                    }
-                    else{
+                    } else {
                         Text(
                             text = "Profit After Expenses",
                             fontWeight = FontWeight.Bold,
@@ -423,15 +421,14 @@ fun DailyReportScreen(navController: NavController, viewModel:AuthViewModel){
                 )
                 {
 
-                    if(date ==  "Today's Date") {
+                    if (date == "Today's Date") {
                         Text(
                             text = "Most Sold Stock Today",
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.align(Alignment.BottomCenter)
 
                         )
-                    }
-                    else{
+                    } else {
                         Text(
                             text = "Most Sold Stock $date",
                             fontWeight = FontWeight.Bold,
@@ -456,10 +453,59 @@ fun DailyReportScreen(navController: NavController, viewModel:AuthViewModel){
                     )
                 }
 
+                Spacer(modifier = Modifier.padding(10.dp))
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(45.dp)
+                )
+                {
+
+                    if (date == "Today's Date") {
+                        Text(
+                            text = "Stocks Sold Today",
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.align(Alignment.BottomCenter)
+
+                        )
+                    } else {
+                        Text(
+                            text = "Stocks Sold $date",
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.align(Alignment.BottomCenter)
+
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.padding(10.dp))
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .wrapContentHeight()
+                )
+                {
+
+                    Text(
+                        text = "$goodsSold",
+                        modifier = Modifier.align(Alignment.TopCenter)
+                    )
+                }
+
 
             }
 
         }
+
+        if (loading) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(50.dp)
+                    .align(Alignment.Center)
+            )
+        }
+
     }
 
 }

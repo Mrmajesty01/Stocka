@@ -8,9 +8,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIos
@@ -22,6 +21,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -48,18 +49,21 @@ fun CreditInfoHomeScreen(navController: NavController, viewModel: AuthViewModel)
     val context = LocalContext.current
     val focus = LocalFocusManager.current
 
-    if(creditItem?.sales.isNullOrEmpty()){
-        navigateTo(navController,Destination.Home)
+    if (creditItem?.sales.isNullOrEmpty()) {
+        navigateTo(navController, Destination.Home)
     }
 
     val formattedDate = creditItem?.salesDate?.let {
         SimpleDateFormat("dd MMM yyyy").format(Date(it))
     } ?: ""
 
-    if(creditItem?.sales.isNullOrEmpty()){
-        navigateTo(navController,Destination.Home)
+    if (creditItem?.sales.isNullOrEmpty()) {
+        navigateTo(navController, Destination.Home)
     }
 
+
+    var customerBalance = creditItem?.balance?.toDoubleOrNull() ?: 0.0
+    var formattedCustomerBalance = formatNumberWithDelimiter(customerBalance!!)
 
     var totalAmount = creditItem?.totalPrice?.toDoubleOrNull() ?: 0.0
     var formattedTotalAmount = formatNumberWithDelimiter(totalAmount)
@@ -74,7 +78,39 @@ fun CreditInfoHomeScreen(navController: NavController, viewModel: AuthViewModel)
         mutableStateOf(false)
     }
 
-    if(openDialog){
+    var openDialogDelete by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    var openDialogPayCredit by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    val features = viewModel.featuresToPin.value
+
+    var editSalesHidden by remember {
+        mutableStateOf(true)
+    }
+
+    var deleteSalesHidden by remember {
+        mutableStateOf(true)
+    }
+
+    var payCreditHidden by remember {
+        mutableStateOf(true)
+    }
+
+    var pin by remember { mutableStateOf(TextFieldValue()) }
+    val userData = viewModel.userData.value
+
+    LaunchedEffect(features) {
+        editSalesHidden = viewModel.featuresToPin.value.EditSales
+        deleteSalesHidden = viewModel.featuresToPin.value.DeleteSales
+        payCreditHidden = viewModel.featuresToPin.value.PayCredit
+    }
+
+
+    if (openDialog) {
         AlertDialog(
             onDismissRequest = { openDialog = false },
 
@@ -83,17 +119,34 @@ fun CreditInfoHomeScreen(navController: NavController, viewModel: AuthViewModel)
             },
 
             text = {
-                Text(text = "Are you sure you want to delete sale ?")
+                Column {
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Add an EditText for PIN input
+                    OutlinedTextField(
+                        value = pin,
+                        onValueChange = {
+                            pin = it
+                        },
+                        label = { Text("Enter PIN To Delete Sale") },
+                        keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.NumberPassword),
+                    )
+                }
             },
 
             confirmButton = {
                 TextButton(onClick = {
-                    openDialog = false
-                    viewModel.deleteEntireDocument(
-                        customerId = creditItem?.customerId.toString(),
-                        salesId = creditItem?.salesId.toString()
-                    ) {
-                        navigateTo(navController, Destination.Home)
+                    if (pin.text.toInt() == userData?.pin?.toInt()) {
+                        openDialog = false
+                        deleteSalesHidden = false
+                        viewModel.deleteEntireDocument(
+                            customerId = creditItem?.customerId.toString(),
+                            salesId = creditItem?.salesId.toString()
+                        ) {
+                            navigateTo(navController, Destination.Home)
+                        }
+                    } else {
+                        Toast.makeText(context, "wrong pin try again", Toast.LENGTH_LONG).show()
                     }
                 }) {
                     Text(text = "Yes")
@@ -110,8 +163,96 @@ fun CreditInfoHomeScreen(navController: NavController, viewModel: AuthViewModel)
         )
     }
 
-    Box(modifier = Modifier
-        .fillMaxSize()
+    if (openDialogDelete) {
+        AlertDialog(
+            onDismissRequest = { openDialogDelete = false },
+
+            title = {
+                Text(text = "Delete Sale")
+            },
+
+            text = {
+                Text(text = "Are you sure you want to delete sale ?")
+            },
+
+            confirmButton = {
+                TextButton(onClick = {
+                    openDialogDelete = false
+                    viewModel.deleteEntireDocument(
+                        customerId = creditItem?.customerId.toString(),
+                        salesId = creditItem?.salesId.toString()
+                    ) {
+                        navigateTo(navController, Destination.Home)
+                    }
+                }) {
+                    Text(text = "Yes")
+                }
+            },
+
+            dismissButton = {
+                TextButton(onClick = {
+                    openDialogDelete = false
+                }) {
+                    Text(text = "No")
+                }
+            },
+        )
+    }
+
+    if (openDialogPayCredit) {
+        AlertDialog(
+            onDismissRequest = { openDialogPayCredit = false },
+
+            title = {
+                Text(text = "Pay Credit")
+            },
+
+            text = {
+                Column {
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Add an EditText for PIN input
+                    OutlinedTextField(
+                        value = pin,
+                        onValueChange = {
+                            pin = it
+                        },
+                        label = { Text("Enter PIN To Pay Credit") },
+                        keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.NumberPassword),
+                    )
+                }
+            },
+
+            confirmButton = {
+                TextButton(onClick = {
+                    if (pin.text.toInt() == userData?.pin?.toInt()) {
+                        openDialogPayCredit = false
+                        payCreditHidden = false
+                        navController.navigate(Destination.PayCredit.routes)
+                        viewModel.onSaleSelected(creditItem!!)
+                        viewModel.onCustomerSelectedHome(creditItem.customerId.toString())
+                    } else {
+                        Toast.makeText(context, "wrong pin try again", Toast.LENGTH_LONG).show()
+                    }
+                }) {
+                    Text(text = "Yes")
+                }
+            },
+
+            dismissButton = {
+                TextButton(onClick = {
+                    openDialogPayCredit = false
+                }) {
+                    Text(text = "No")
+                }
+            },
+        )
+    }
+
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
     ) {
 
         if (isLoading || isLoadingCustomer || isLoadingDelete) {
@@ -142,8 +283,8 @@ fun CreditInfoHomeScreen(navController: NavController, viewModel: AuthViewModel)
                         .padding(start = 5.dp)
                         .size(15.dp)
                         .clickable {
-                            if(!isLoading || !isLoadingCustomer || !isLoadingDelete) {
-                                navigateTo(navController, Destination.Home)
+                            if (!isLoading || !isLoadingCustomer || !isLoadingDelete) {
+                                navController.popBackStack()
                             }
                         },
                     tint = ListOfColors.black
@@ -194,7 +335,7 @@ fun CreditInfoHomeScreen(navController: NavController, viewModel: AuthViewModel)
                     )
 
                     Text(
-                        text = customer?.customerBalance.toString(),
+                        text = formattedCustomerBalance,
                         modifier = Modifier.align(Alignment.BottomEnd)
                     )
 
@@ -286,205 +427,228 @@ fun CreditInfoHomeScreen(navController: NavController, viewModel: AuthViewModel)
                             }
                         }
                     }
-                }
 
-                Spacer(modifier = Modifier.padding(10.dp))
+                    item {
 
-                Column(
-                    modifier = Modifier
-                        .verticalScroll(rememberScrollState()),
-                ) {
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(40.dp)
-                            .padding(start = 5.dp, end = 5.dp)
-                    ) {
-
-                        Text(
-                            text = "Total Quantity",
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.align(Alignment.TopStart)
-                        )
-
-                        Text(
-                            text = "Total Amount",
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.align(Alignment.TopEnd)
-                        )
-
-                        Text(
-                            text = creditItem?.totalQuantity.toString(),
-                            modifier = Modifier.align(Alignment.BottomStart)
-                        )
-
-                        Text(
-                            text = formattedTotalAmount,
-                            modifier = Modifier.align(Alignment.BottomEnd)
-                        )
-
-                    }
+                        Spacer(modifier = Modifier.padding(10.dp))
 
 
-                    Spacer(modifier = Modifier.padding(5.dp))
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(40.dp)
+                                .padding(start = 5.dp, end = 5.dp)
+                        ) {
+
+                            Text(
+                                text = "Total Quantity",
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.align(Alignment.TopStart)
+                            )
+
+                            Text(
+                                text = "Total Amount",
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.align(Alignment.TopEnd)
+                            )
+
+                            Text(
+                                text = creditItem?.totalQuantity.toString(),
+                                modifier = Modifier.align(Alignment.BottomStart)
+                            )
+
+                            Text(
+                                text = formattedTotalAmount,
+                                modifier = Modifier.align(Alignment.BottomEnd)
+                            )
+
+                        }
 
 
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(40.dp)
-                            .padding(start = 5.dp, end = 5.dp)
-                    ) {
-
-                        Text(
-                            text = "Amount Paid",
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.align(Alignment.TopEnd)
-                        )
-
-                        Text(
-                            text = formattedTotalAmountPaid,
-                            modifier = Modifier.align(Alignment.BottomEnd)
-                        )
-
-                    }
-
-                    Spacer(modifier = Modifier.padding(5.dp))
+                        Spacer(modifier = Modifier.padding(5.dp))
 
 
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(40.dp)
-                            .padding(start = 5.dp, end = 5.dp)
-                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(40.dp)
+                                .padding(start = 5.dp, end = 5.dp)
+                        ) {
+
+                            Text(
+                                text = "Amount Paid",
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.align(Alignment.TopEnd)
+                            )
+
+                            Text(
+                                text = formattedTotalAmountPaid,
+                                modifier = Modifier.align(Alignment.BottomEnd)
+                            )
+
+                        }
+
+                        Spacer(modifier = Modifier.padding(5.dp))
 
 
-                        Text(
-                            text = "Balance",
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.align(Alignment.TopEnd)
-                        )
-
-                        Text(
-                            text = formattedTotalBalance,
-                            modifier = Modifier.align(Alignment.BottomEnd)
-                        )
-
-                    }
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(40.dp)
+                                .padding(start = 5.dp, end = 5.dp)
+                        ) {
 
 
-                    Spacer(modifier = Modifier.padding(20.dp))
+                            Text(
+                                text = "Balance",
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.align(Alignment.TopEnd)
+                            )
+
+                            Text(
+                                text = formattedTotalBalance,
+                                modifier = Modifier.align(Alignment.BottomEnd)
+                            )
+
+                        }
 
 
-                    Row(
-                        Modifier
-                            .align(Alignment.CenterHorizontally),
-                    ) {
-                        Button(
-                            onClick = {
-                                if (!isLoading || !isLoadingCustomer || !isLoadingDelete) {
+                        Spacer(modifier = Modifier.padding(20.dp))
 
-                                    if (creditItem?.sales.isNullOrEmpty() || (creditItem?.sales?.size
-                                            ?: 0) < 15
-                                    ) {
-                                        viewModel.onSaleSelected(creditItem!!)
-                                        viewModel.fromPage("home")
-                                        navigateTo(navController, Destination.AddCredit)
-                                    } else {
-                                        Toast.makeText(
-                                            context,
-                                            "Limit exceeded for adding sale",
-                                            Toast.LENGTH_LONG
-                                        ).show()
+
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.Center
+                        ) {
+
+                            Row(
+                                Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Button(
+                                    onClick = {
+                                        if (!isLoading || !isLoadingCustomer || !isLoadingDelete) {
+
+                                            if (creditItem?.sales.isNullOrEmpty() || (creditItem?.sales?.size
+                                                    ?: 0) < 15
+                                            ) {
+                                                viewModel.onSaleSelected(creditItem!!)
+                                                viewModel.fromPage("home")
+                                                navigateTo(navController, Destination.AddCredit)
+                                            } else {
+                                                Toast.makeText(
+                                                    context,
+                                                    "Limit exceeded for adding sale",
+                                                    Toast.LENGTH_LONG
+                                                ).show()
+                                            }
+                                        }
+
+                                    },
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.buttonColors(ListOfColors.orange),
+                                    modifier = Modifier
+                                        .width(120.dp)
+                                        .height(50.dp)
+                                ) {
+                                    Text(
+
+                                        text = "Add Goods",
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.width(20.dp))
+
+                                Button(
+                                    onClick = {
+                                        if (!isLoading || !isLoadingCustomer || !isLoadingDelete) {
+                                            viewModel.onSaleSelected(creditItem!!)
+                                            navController.navigate(Destination.CreditReceipt.routes)
+                                        }
+                                    },
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.buttonColors(ListOfColors.orange),
+                                    modifier = Modifier
+                                        .width(120.dp)
+                                        .height(50.dp)
+                                ) {
+                                    Text(
+                                        text = "Generate Receipt",
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.padding(10.dp))
+
+
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.Center
+                        ) {
+
+                            Button(
+                                onClick = {
+                                    if (!isLoading || !isLoadingCustomer || !isLoadingDelete) {
+                                        if (payCreditHidden) {
+                                            openDialogPayCredit = true
+                                        } else {
+                                            navController.navigate(Destination.PayCredit.routes)
+                                            viewModel.onSaleSelected(creditItem!!)
+                                            viewModel.onCustomerSelectedHome(creditItem.customerId.toString())
+                                        }
                                     }
-                                }
-
-                            },
-                            shape = RoundedCornerShape(10.dp),
-                            colors = ButtonDefaults.buttonColors(ListOfColors.orange),
-                            modifier = Modifier
-                                .width(120.dp)
-                                .height(50.dp)
-                        ) {
-                            Text(
-
-                                text = "Add Goods",
-                                textAlign = TextAlign.Center
-                            )
+                                },
+                                shape = RoundedCornerShape(10.dp),
+                                colors = ButtonDefaults.buttonColors(ListOfColors.orange),
+                                modifier = Modifier
+                                    .fillMaxWidth(0.7f)
+                                    .height(50.dp)
+                            ) {
+                                Text(
+                                    "Pay Credit"
+                                )
+                            }
                         }
 
-                        Spacer(modifier = Modifier.width(20.dp))
+                        Spacer(modifier = Modifier.padding(10.dp))
 
-                        Button(
-                            onClick = {
-                                if (!isLoading || !isLoadingCustomer || !isLoadingDelete) {
-                                    viewModel.onSaleSelected(creditItem!!)
-                                    navController.navigate(Destination.CreditReceipt.routes)
-                                }
-                            },
-                            shape = RoundedCornerShape(10.dp),
-                            colors = ButtonDefaults.buttonColors(ListOfColors.orange),
-                            modifier = Modifier
-                                .width(120.dp)
-                                .height(50.dp)
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Text(
-                                text = "Generate Receipt",
-                                textAlign = TextAlign.Center
-                            )
+
+                            Button(
+                                onClick = {
+                                    if (!isLoading || !isLoadingCustomer || !isLoadingDelete) {
+                                        if (deleteSalesHidden) {
+                                            openDialog = true
+                                        } else {
+                                            openDialogDelete = true
+                                        }
+                                    }
+                                },
+                                shape = RoundedCornerShape(10.dp),
+                                colors = ButtonDefaults.buttonColors(ListOfColors.orange),
+                                modifier = Modifier
+                                    .fillMaxWidth(0.7f)
+                                    .height(50.dp)
+                            ) {
+                                Text(
+                                    "Delete"
+                                )
+                            }
                         }
 
-                    }
-
-                    Spacer(modifier = Modifier.padding(10.dp))
-
-
-                    Button(
-                        onClick = {
-                            if (!isLoading || !isLoadingCustomer || !isLoadingDelete) {
-                                navController.navigate(Destination.PayCredit.routes)
-                                viewModel.onSaleSelected(creditItem!!)
-                                viewModel.onCustomerSelectedHome(creditItem.customerId.toString())
-                            }
-                        },
-                        shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.buttonColors(ListOfColors.orange),
-                        modifier = Modifier
-                            .fillMaxWidth(0.7f)
-                            .height(50.dp)
-                            .align(Alignment.CenterHorizontally)
-                    ) {
-                        Text(
-                            "Pay Credit"
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.padding(10.dp))
-
-                    Button(
-                        onClick = {
-                            if (!isLoading || !isLoadingCustomer || !isLoadingDelete) {
-                                openDialog = true
-                            }
-                        },
-                        shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.buttonColors(ListOfColors.orange),
-                        modifier = Modifier
-                            .fillMaxWidth(0.7f)
-                            .height(50.dp)
-                            .align(Alignment.CenterHorizontally)
-                    ) {
-                        Text(
-                            "Delete"
-                        )
                     }
                 }
             }
         }
 
-        if(isLoading || isLoadingCustomer || isLoadingDelete){
+        if (isLoading || isLoadingCustomer || isLoadingDelete) {
             CircularProgressIndicator(
                 modifier = Modifier.size(50.dp)
                     .align(Alignment.Center)

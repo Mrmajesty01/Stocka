@@ -237,7 +237,11 @@ fun EditCustomerInfoScreen(navController: NavController, viewModel: AuthViewMode
                                     addAmount
                                 ) {
                                     viewModel.getCustomer(customer!!)
-                                    navController.navigate(Destination.CustomerInfo.routes)
+                                    navController.navigate(Destination.CustomerInfo.routes){
+                                        popUpTo(Destination.CustomerInfo.routes){
+                                            inclusive = true
+                                        }
+                                    }
                                 }
                             } else {
                                 Toast.makeText(

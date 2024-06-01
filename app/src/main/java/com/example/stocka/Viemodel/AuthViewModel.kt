@@ -8,6 +8,8 @@ import androidx.annotation.RequiresApi
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 import androidx.core.app.NotificationCompat
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.example.stocka.R
 import com.example.stocka.Util.Constants
@@ -15,6 +17,7 @@ import com.example.stocka.data.Customer
 import com.example.stocka.data.DailyReport
 import com.example.stocka.data.Event
 import com.example.stocka.data.Expense
+import com.example.stocka.data.FeaturesToPin
 import com.example.stocka.data.Sales
 import com.example.stocka.data.SingleSale
 import com.example.stocka.data.Stock
@@ -30,6 +33,8 @@ import com.google.firebase.firestore.toObjects
 import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.text.SimpleDateFormat
+import java.time.LocalDate
+import java.time.ZoneOffset
 import java.util.Calendar
 import java.util.Date
 import java.util.UUID
@@ -47,6 +52,8 @@ class AuthViewModel @Inject constructor(
     val inProgress = mutableStateOf(false)
     val userData = mutableStateOf<User?>(null)
     val dailyReport = mutableStateOf<DailyReport?>(null)
+    val featuresToPin = mutableStateOf(FeaturesToPin())
+    val inProgressFeaturesToPin = mutableStateOf(false)
     val popupNotification = mutableStateOf<Event<String>?>(null)
     val refreshSalesProgress = mutableStateOf(false)
     val getStockProgress = mutableStateOf(false)
@@ -78,6 +85,7 @@ class AuthViewModel @Inject constructor(
     val stocks = mutableStateOf<List<Stock>>(listOf())
     val stockSearchProgress = mutableStateOf(false)
     val invoiceSearchProgress = mutableStateOf(false)
+    val dailyReportProgress = mutableStateOf(false)
     val customerSelected = mutableStateOf<Customer?>(null)
     val salesSelected = mutableStateOf<Sales?>(null)
     val stockSelected = mutableStateOf<Stock?>(null)
@@ -88,9 +96,14 @@ class AuthViewModel @Inject constructor(
     val totalStockValue = mutableStateOf(0.0)
     val fromPageValue = mutableStateOf("")
 
+
+    val AllsalesTotalToday = mutableStateOf(0.0)
     val saleReceiptTotalToday = mutableStateOf(0.0)
     val creditReceiptTotalToday = mutableStateOf(0.0)
+    val totalProfitToday =  mutableStateOf(0.0)
+    val totalExpenseToday =  mutableStateOf(0.0)
     val mostBoughtGoodToday = mutableStateOf("")
+    val goodsSold = mutableStateOf("")
     val mostBoughtGoodQuantity = mutableStateOf("")
 
     val totalSalesFilter = mutableStateOf(0.0)
@@ -102,6 +115,13 @@ class AuthViewModel @Inject constructor(
     val mostBoughtGoodFilter = mutableStateOf("")
     val mostBoughtGoodQuantityFilter = mutableStateOf("")
 
+    val paymentDue = mutableStateOf(false)
+    val paymentSuccesful = mutableStateOf(false)
+
+
+    private val _payTrigger = MutableLiveData<Unit>()
+    val payTrigger: LiveData<Unit> get() = _payTrigger
+
 
 
 
@@ -110,99 +130,10 @@ class AuthViewModel @Inject constructor(
     init {
         auth.signOut()
         val currentUser = auth.currentUser
-        signedIn.value = currentUser!=null
-        currentUser?.uid?.let {uid->
+        signedIn.value = currentUser != null
+        currentUser?.uid?.let { uid ->
             getUserData(uid)
-            db.collection(Constants.COLLECTION_NAME_USERS).document(uid)
-                .addSnapshotListener { snapshot, error ->
-                    if (error != null) {
-                        // Handle error
-                        return@addSnapshotListener
-                    }
 
-                    if (snapshot != null && snapshot.exists()) {
-                        // Document data is available in snapshot
-                        // You can access the data using snapshot.toObject(YourUserClass::class.java)
-
-                        // Call a function to handle the updated data
-                        getUserData(uid)
-                    } else {
-                        // Document doesn't exist or is empty
-                    }
-                }
-
-            db.collection(Constants.COLLECTION_NAME_STOCKS).document(uid)
-                .addSnapshotListener { snapshot, error ->
-                    if (error != null) {
-                        // Handle error
-                        return@addSnapshotListener
-                    }
-
-                    if (snapshot != null && snapshot.exists()) {
-                        // Document data is available in snapshot
-                        // You can access the data using snapshot.toObject(YourUserClass::class.java)
-
-                        // Call a function to handle the updated data
-                        getUserData(uid)
-                    } else {
-                        // Document doesn't exist or is empty
-                    }
-                }
-
-
-            db.collection(Constants.COLLECTION_NAME_EXPENSE).document(uid)
-                .addSnapshotListener { snapshot, error ->
-                    if (error != null) {
-                        // Handle error
-                        return@addSnapshotListener
-                    }
-
-                    if (snapshot != null && snapshot.exists()) {
-                        // Document data is available in snapshot
-                        // You can access the data using snapshot.toObject(YourUserClass::class.java)
-
-                        // Call a function to handle the updated data
-                        getUserData(uid)
-                    } else {
-                        // Document doesn't exist or is empty
-                    }
-                }
-
-            db.collection(Constants.COLLECTION_NAME_CUSTOMERS).document(uid)
-                .addSnapshotListener { snapshot, error ->
-                    if (error != null) {
-                        // Handle error
-                        return@addSnapshotListener
-                    }
-
-                    if (snapshot != null && snapshot.exists()) {
-                        // Document data is available in snapshot
-                        // You can access the data using snapshot.toObject(YourUserClass::class.java)
-
-                        // Call a function to handle the updated data
-                        getUserData(uid)
-                    } else {
-                        // Document doesn't exist or is empty
-                    }
-                }
-
-            db.collection(Constants.COLLECTION_NAME_SALES).document(uid)
-                .addSnapshotListener { snapshot, error ->
-                    if (error != null) {
-                        // Handle error
-                        return@addSnapshotListener
-                    }
-
-                    if (snapshot != null && snapshot.exists()) {
-                        // Document data is available in snapshot
-                        // You can access the data using snapshot.toObject(YourUserClass::class.java)
-
-                        // Call a function to handle the updated data
-                        getUserData(uid)
-                    } else {
-                        // Document doesn't exist or is empty
-                    }
-                }
         }
     }
 
@@ -271,12 +202,16 @@ class AuthViewModel @Inject constructor(
 
         val userId = auth.currentUser?.uid
 
+        val currentDate = LocalDate.now()
+        val paymentDueDate = currentDate.plusDays(30).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
         val user = User(
             userId = userId,
             fullName = fullName ?:userData.value?.fullName,
             businessName = businessName ?:userData.value?.businessName,
             email = email ?:userData.value?.email,
             currentDate = System.currentTimeMillis(),
+            dateCreated = System.currentTimeMillis(),
+            paymentDate = paymentDueDate,
             password = password ?:userData.value?.password,
             confirmPassword = confirmPassword ?:userData.value?.confirmPassword,
             totalSales = "0.0",
@@ -286,6 +221,21 @@ class AuthViewModel @Inject constructor(
             creditReceiptTotalToday = "0.0",
             mostSoldGoodToday = "",
             mostSoldGoodQuantity = "",
+        )
+
+        val feature = FeaturesToPin(
+            TotalSales = false,
+            TotalExpenses = false,
+            TotalProfit = false,
+            DailyReport = false,
+            StockTotalValue = false,
+            TotalAmountOwingCustomers = false,
+            EditStocks = false,
+            EditCustomers = false,
+            DeleteStocks = false,
+            DeleteCustomers = false,
+            EditSales = false,
+            DeleteSales = false,
         )
 
         userId?.let {uid->
@@ -315,6 +265,31 @@ class AuthViewModel @Inject constructor(
                     inProgress.value = false
                 }
 
+            db.collection(Constants.COLLECTION_NAME_FEATURESTOPIN).document(uid).set(feature)
+                .addOnSuccessListener {
+
+                }
+
+                .addOnFailureListener {exc->
+                    handleException(exc)
+                }
+
+        }
+    }
+
+    fun resetPassword(email: String,onSuccess: () -> Unit) {
+        if (email.isEmpty()) {
+            popupNotification.value = Event("please fill in email address")
+        }
+        else {
+            auth.sendPasswordResetEmail(email).addOnSuccessListener {
+                popupNotification.value = Event("Password reset email sent")
+                onSuccess.invoke()
+
+            }
+                .addOnFailureListener { exc ->
+                    handleException(exc)
+                }
         }
     }
 
@@ -323,6 +298,31 @@ class AuthViewModel @Inject constructor(
         signedIn.value = false
         userData.value = null
         onSuccess.invoke()
+    }
+
+    fun checkForPayment(){
+        val currentDate = System.currentTimeMillis()
+        val userPaymentDate = userData.value?.paymentDate
+        if (userPaymentDate != null && currentDate > userPaymentDate){
+          paymentDue.value = true
+        }
+    }
+
+    fun updatePaymentDate(){
+        val userid = auth.currentUser?.uid
+
+        val currentDate = LocalDate.now()
+        val paymentDueDate = currentDate.plusDays(30).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+        val updateDate = mapOf(
+            "paymentDate" to paymentDueDate
+        )
+        db.collection(Constants.COLLECTION_NAME_USERS).document(userid.toString()).update(updateDate).addOnSuccessListener {
+            getUserData(userid.toString())
+            popupNotification.value = Event("payment date updated successfully")
+        }
+        .addOnFailureListener {exc->
+                handleException(exc)
+            }
     }
 
     fun retrieveUser() {
@@ -347,7 +347,9 @@ class AuthViewModel @Inject constructor(
                 val user = it.toObject(User::class.java)
                 userData.value = user
                 inProgress.value = false
+                checkForPayment()
                 checkExpiryDate()
+                retrievePasswordFeatures()
                 retrieveSales()
                 retrieveInvoices()
                 retrieveCustomer()
@@ -357,6 +359,13 @@ class AuthViewModel @Inject constructor(
                 refreshSales()
                 getTotalStockValue()
                 getTotalAmountOwingCustomer()
+                getAllSaleReceiptToday()
+                getTotalSaleReceiptToday()
+                getTotalProfitToday()
+                getTotalExpenseToday()
+                getTotalCreditReceiptToday()
+                getMostPurchasedProductsToday()
+                getAllPurchasedProductsToday()
 
 
             }
@@ -397,7 +406,8 @@ class AuthViewModel @Inject constructor(
                             "salesReceiptTotalToday" to "0.0",
                             "creditReceiptTotalToday" to "0.0",
                             "mostSoldGoodToday" to "",
-                            "mostSoldGoodQuantity" to ""
+                            "mostSoldGoodQuantity" to "",
+                            "goodsSold" to ""
                         )
 
                         val dailyReport =  DailyReport(
@@ -410,7 +420,8 @@ class AuthViewModel @Inject constructor(
                             totalExpensesToday = userData.value!!.totalExpenses.toString(),
                             profitAfterExpense = (userData.value!!.totalProfit!!.toDouble()- userData.value!!.totalExpenses!!.toDouble()).toString(),
                             mostSoldGood = userData.value!!.mostSoldGoodToday.toString(),
-                            mostSoldGoodQty = userData.value!!.mostSoldGoodQuantity
+                            mostSoldGoodQty = userData.value!!.mostSoldGoodQuantity,
+                            goodsSold = userData.value!!.goodsSold
                         )
 
                         db.collection(Constants.COLLECTION_NAME_DAILYREPORT).document(UUID.randomUUID().toString()).set(dailyReport)
@@ -423,9 +434,13 @@ class AuthViewModel @Inject constructor(
 
                         db.collection(Constants.COLLECTION_NAME_USERS).document(userId.toString()).update(update).
                         addOnSuccessListener {
+                            getAllSaleReceiptToday()
                             getTotalSaleReceiptToday()
+                            getTotalProfitToday()
+                            getTotalExpenseToday()
                             getTotalCreditReceiptToday()
                             getMostPurchasedProductsToday()
+                            getAllPurchasedProductsToday()
                             retrieveUser()
                         }
                             .addOnFailureListener {exc->
@@ -559,6 +574,72 @@ class AuthViewModel @Inject constructor(
 
     }
 
+    fun retrieveCustomerWithHighestBalance() {
+
+        val userId = auth.currentUser?.uid
+
+        if (userId != null) {
+            inProgress.value = true
+            db.collection(Constants.COLLECTION_NAME_CUSTOMERS).whereEqualTo("userId", userId)
+                .get()
+                .addOnSuccessListener {document->
+                    convertCustomerWithHighestBalance(document,customerData)
+                    inProgress.value = false
+                }
+                .addOnFailureListener {exc->
+                    handleException(exc,"Unable to fetch customers")
+                    inProgress.value = false
+                }
+        }
+        else{
+            handleException(customMessage = "Error: Unable to fetch customers")
+        }
+    }
+
+    private fun convertCustomerWithHighestBalance(documents:QuerySnapshot,outState:MutableState<List<Customer>>){
+        val newCustomer = mutableListOf<Customer>()
+        documents.forEach{doc->
+            val customer = doc.toObject(Customer::class.java)
+            newCustomer.add(customer)
+        }
+        val sortedCustomer = newCustomer.sortedByDescending { it.customerBalance?.toDouble() }
+        outState.value = sortedCustomer
+
+    }
+
+    fun retrieveCustomerWithLowestBalance() {
+
+        val userId = auth.currentUser?.uid
+
+        if (userId != null) {
+            inProgress.value = true
+            db.collection(Constants.COLLECTION_NAME_CUSTOMERS).whereEqualTo("userId", userId)
+                .get()
+                .addOnSuccessListener {document->
+                    convertCustomerWithLowestBalance(document,customerData)
+                    inProgress.value = false
+                }
+                .addOnFailureListener {exc->
+                    handleException(exc,"Unable to fetch customers")
+                    inProgress.value = false
+                }
+        }
+        else{
+            handleException(customMessage = "Error: Unable to fetch customers")
+        }
+    }
+
+    private fun convertCustomerWithLowestBalance(documents:QuerySnapshot,outState:MutableState<List<Customer>>){
+        val newCustomer = mutableListOf<Customer>()
+        documents.forEach{doc->
+            val customer = doc.toObject(Customer::class.java)
+            newCustomer.add(customer)
+        }
+        val sortedCustomer = newCustomer.sortedBy { it.customerBalance?.toDouble() }
+        outState.value = sortedCustomer
+
+    }
+
 
 
 
@@ -618,12 +699,17 @@ class AuthViewModel @Inject constructor(
                     db.collection(Constants.COLLECTION_NAME_STOCKS).document(stockId).set(stock)
                         .addOnSuccessListener {
                             db.collection(Constants.COLLECTION_NAME_STOCKHISTORY).document(randomUid.toString()).set(stockHistory).addOnSuccessListener {
+                                stockSelected.value = stock
                                 popupNotification.value = Event("Stock added successfully")
                                 retrieveStocks()
                                 getTotalStockValue()
+                                getAllSaleReceiptToday()
                                 getTotalSaleReceiptToday()
+                                getTotalProfitToday()
+                                getTotalExpenseToday()
                                 getTotalCreditReceiptToday()
                                 getMostPurchasedProductsToday()
+                                getAllPurchasedProductsToday()
                                 onSuccess.invoke()
                                 inProgress.value = false
                             }
@@ -677,6 +763,143 @@ class AuthViewModel @Inject constructor(
         val sortedStock = newStock.sortedBy { it.stockName }
         outState.value = sortedStock
     }
+
+    fun filterStocksByMostSold(){
+
+        val userId = auth.currentUser?.uid
+
+        if(userId != null){
+
+            inProgress.value = true
+            db.collection(Constants.COLLECTION_NAME_STOCKS)
+                .whereEqualTo("userId", userId)
+                .get()
+                .addOnSuccessListener { document ->
+                    convertStockByMostSold(document, stocks)
+                    inProgress.value = false
+                }
+                .addOnFailureListener { exc ->
+                    handleException(exc, "unable to fetch stocks")
+                    inProgress.value = false
+                }
+        } else {
+            handleException(customMessage = "Error: unable to fetch stocks")
+        }
+    }
+
+    private fun convertStockByMostSold(document:QuerySnapshot,outState:MutableState<List<Stock>>){
+        val newStock = mutableListOf<Stock>()
+        document.forEach{doc->
+            val stock = doc.toObject(Stock::class.java)
+            newStock.add(stock)
+        }
+        val sortedStock = newStock.sortedByDescending { it.stockQuantitySold.toInt() }
+        outState.value = sortedStock
+    }
+
+    fun filterStocksByLeastSold(){
+
+        val userId = auth.currentUser?.uid
+
+        if(userId != null){
+
+            inProgress.value = true
+            db.collection(Constants.COLLECTION_NAME_STOCKS)
+                .whereEqualTo("userId", userId)
+                .get()
+                .addOnSuccessListener { document ->
+                    convertStockByLeastSold(document, stocks)
+                    inProgress.value = false
+                }
+                .addOnFailureListener { exc ->
+                    handleException(exc, "unable to fetch stocks")
+                    inProgress.value = false
+                }
+        } else {
+            handleException(customMessage = "Error: unable to fetch stocks")
+        }
+    }
+
+
+    private fun convertStockByLeastSold(document:QuerySnapshot,outState:MutableState<List<Stock>>){
+        val newStock = mutableListOf<Stock>()
+        document.forEach{doc->
+            val stock = doc.toObject(Stock::class.java)
+            newStock.add(stock)
+        }
+        val sortedStock = newStock.sortedBy { it.stockQuantitySold.toInt() }
+        outState.value = sortedStock
+    }
+
+
+    fun filterStocksByHighestQuantity(){
+
+        val userId = auth.currentUser?.uid
+
+        if(userId != null){
+
+            inProgress.value = true
+            db.collection(Constants.COLLECTION_NAME_STOCKS)
+                .whereEqualTo("userId", userId)
+                .get()
+                .addOnSuccessListener { document ->
+                    convertStockByHighestQty(document, stocks)
+                    inProgress.value = false
+                }
+                .addOnFailureListener { exc ->
+                    handleException(exc, "unable to fetch stocks")
+                    inProgress.value = false
+                }
+        } else {
+            handleException(customMessage = "Error: unable to fetch stocks")
+        }
+    }
+
+    private fun convertStockByHighestQty(document:QuerySnapshot,outState:MutableState<List<Stock>>){
+        val newStock = mutableListOf<Stock>()
+        document.forEach{doc->
+            val stock = doc.toObject(Stock::class.java)
+            newStock.add(stock)
+        }
+        val sortedStock = newStock.sortedByDescending { it.stockQuantity.toInt() }
+        outState.value = sortedStock
+    }
+
+
+    fun filterStocksByLowestQuantity(){
+
+        val userId = auth.currentUser?.uid
+
+        if(userId != null){
+
+            inProgress.value = true
+            db.collection(Constants.COLLECTION_NAME_STOCKS)
+                .whereEqualTo("userId", userId)
+                .get()
+                .addOnSuccessListener { document ->
+                    convertStockByLowestQty(document, stocks)
+                    inProgress.value = false
+                }
+                .addOnFailureListener { exc ->
+                    handleException(exc, "unable to fetch stocks")
+                    inProgress.value = false
+                }
+        } else {
+            handleException(customMessage = "Error: unable to fetch stocks")
+        }
+    }
+
+    private fun convertStockByLowestQty(document:QuerySnapshot,outState:MutableState<List<Stock>>){
+        val newStock = mutableListOf<Stock>()
+        document.forEach{doc->
+            val stock = doc.toObject(Stock::class.java)
+            newStock.add(stock)
+        }
+        val sortedStock = newStock.sortedBy { it.stockQuantity.toInt() }
+        outState.value = sortedStock
+    }
+
+
 
 
 
@@ -811,10 +1034,16 @@ class AuthViewModel @Inject constructor(
                         sale.sales?.sumByDouble { it.totalPrice?.toDoubleOrNull() ?: 0.0 }
                     val updatedTotalQuantity =
                         sale.sales?.sumByDouble { it.quantity?.toDoubleOrNull() ?: 0.0 }
+                    val updatedTotalProfit =
+                        sale.sales?.sumByDouble { it.profit?.toDoubleOrNull() ?: 0.0 }
+                    val updatedAmountPayed =
+                        sale.sales?.sumByDouble { it.totalPrice?.toDoubleOrNull() ?: 0.0 }
 
                     // Update the total amount and total quantity in the Sales object
                     sale.totalPrice = updatedTotalAmount.toString()
                     sale.totalQuantity = updatedTotalQuantity.toString()
+                    sale.totalProfit = updatedTotalProfit.toString()
+                    sale.amountPaid = updatedAmountPayed.toString()
                 }
 
                 // Save the entire sale object to the database
@@ -827,11 +1056,14 @@ class AuthViewModel @Inject constructor(
                             inProgress.value = false
                             retrieveInvoices()
                             refreshSales()
-                            getUserData(currentUid.toString())
                             retrieveSales()
                             getTotalAmountOwingCustomer()
                             getMostPurchasedProductsToday()
+                            getAllPurchasedProductsToday()
+                            getAllSaleReceiptToday()
                             getTotalSaleReceiptToday()
+                            getTotalProfitToday()
+                            getTotalExpenseToday()
                         }
                         else{
                             this.salesDetail.value = sale
@@ -839,11 +1071,14 @@ class AuthViewModel @Inject constructor(
                             inProgress.value = false
                             retrieveInvoices()
                             refreshSales()
-                            getUserData(currentUid.toString())
                             retrieveSales()
                             getTotalAmountOwingCustomer()
                             getMostPurchasedProductsToday()
+                            getAllPurchasedProductsToday()
+                            getAllSaleReceiptToday()
                             getTotalSaleReceiptToday()
+                            getTotalProfitToday()
+                            getTotalExpenseToday()
                             onSalesSuccess.invoke()
                         }
                     }
@@ -906,10 +1141,14 @@ class AuthViewModel @Inject constructor(
                         sale.sales?.sumByDouble { it.quantity?.toDoubleOrNull() ?: 0.0 }
                      val updatedBalance =
                         updatedTotalAmount!! - sale.amountPaid?.toDouble()!!
+                    val updatedTotalProfit =
+                        sale.sales?.sumByDouble { it.profit?.toDoubleOrNull() ?: 0.0 }
+
 
                     // Update the total amount and total quantity in the Sales object
                     sale.totalPrice = updatedTotalAmount.toString()
                     sale.totalQuantity = updatedTotalQuantity.toString()
+                    sale.totalProfit = updatedTotalProfit.toString()
                     sale.balance = updatedBalance.toString()
                 }
 
@@ -957,12 +1196,15 @@ class AuthViewModel @Inject constructor(
                         popupNotification.value = Event("Sales created successfully")
                         inProgress.value = false
                         retrieveInvoices()
-                        getUserData(currentUid.toString())
                         refreshSales()
                         retrieveSales()
                         getTotalAmountOwingCustomer()
                         getMostPurchasedProductsToday()
+                        getAllPurchasedProductsToday()
+                        getAllSaleReceiptToday()
                         getTotalSaleReceiptToday()
+                        getTotalProfitToday()
+                        getTotalExpenseToday()
                         getTotalCreditReceiptToday()
                         retrieveCustomer()
                     }
@@ -992,6 +1234,7 @@ class AuthViewModel @Inject constructor(
         if(currentUid!=null){
             val salesUid = UUID.randomUUID().toString()
             val salesNumber = userData.value?.saleNo!!.toInt()+1
+
 
             val sales = Sales(
                 userId = currentUid,
@@ -1032,8 +1275,12 @@ class AuthViewModel @Inject constructor(
                         retrieveSales()
                         retrieveUser()
                         getMostPurchasedProductsToday()
+                        getAllPurchasedProductsToday()
                         getTotalCreditReceiptToday()
+                        getAllSaleReceiptToday()
                         getTotalSaleReceiptToday()
+                        getTotalProfitToday()
+                        getTotalExpenseToday()
                     }
                     else{
                         val updatedTotalSales = userData.value?.totalSales?.toDouble()!! + totalPrice.toDouble()
@@ -1055,8 +1302,12 @@ class AuthViewModel @Inject constructor(
                         retrieveSales()
                         retrieveUser()
                         getMostPurchasedProductsToday()
+                        getAllPurchasedProductsToday()
                         getTotalCreditReceiptToday()
+                        getAllSaleReceiptToday()
                         getTotalSaleReceiptToday()
+                        getTotalProfitToday()
+                        getTotalExpenseToday()
                         onSalesSuccess.invoke()
                     }
 
@@ -1141,8 +1392,12 @@ class AuthViewModel @Inject constructor(
                         retrieveCustomer()
                         getTotalAmountOwingCustomer()
                         getMostPurchasedProductsToday()
+                        getAllPurchasedProductsToday()
                         getTotalCreditReceiptToday()
+                        getAllSaleReceiptToday()
                         getTotalSaleReceiptToday()
+                        getTotalProfitToday()
+                        getTotalExpenseToday()
                         retrieveUser()
                     }
                     else{
@@ -1184,8 +1439,12 @@ class AuthViewModel @Inject constructor(
                         retrieveCustomer()
                         getTotalAmountOwingCustomer()
                         getMostPurchasedProductsToday()
+                        getAllPurchasedProductsToday()
                         getTotalCreditReceiptToday()
+                        getAllSaleReceiptToday()
                         getTotalSaleReceiptToday()
+                        getTotalProfitToday()
+                        getTotalExpenseToday()
                         retrieveUser()
                         onSalesSuccess.invoke()
                     }
@@ -1397,12 +1656,78 @@ class AuthViewModel @Inject constructor(
         outState.value = sortedExpense
     }
 
-    fun expenseSearch(name:String){
+    fun expenseSearchByName(name:String){
         val userId = auth.currentUser?.uid
         if(name.isNotEmpty()){
             expenseProgress.value = true
             db.collection(Constants.COLLECTION_NAME_EXPENSE).whereEqualTo("userId", userId)
                 .whereEqualTo("expenseName",name.toLowerCase())
+                .get()
+                .addOnSuccessListener {document->
+                    convertExpenseSearch(document,expenseData)
+                    expenseProgress.value = false
+                }
+                .addOnFailureListener {exc->
+                    handleException(exc,"Unable to fetch sales")
+                    print(exc)
+                    expenseProgress.value = false
+                }
+        }
+        else{
+            retrieveExpense()
+        }
+    }
+
+    fun expenseSearchByCategory(name:String){
+        val userId = auth.currentUser?.uid
+        if(name.isNotEmpty()){
+            expenseProgress.value = true
+            db.collection(Constants.COLLECTION_NAME_EXPENSE).whereEqualTo("userId", userId)
+                .whereEqualTo("expenseCategory",name.toLowerCase())
+                .get()
+                .addOnSuccessListener {document->
+                    convertExpenseSearch(document,expenseData)
+                    expenseProgress.value = false
+                }
+                .addOnFailureListener {exc->
+                    handleException(exc,"Unable to fetch sales")
+                    print(exc)
+                    expenseProgress.value = false
+                }
+        }
+        else{
+            retrieveExpense()
+        }
+    }
+
+    fun expenseSearchByDescription(name:String){
+        val userId = auth.currentUser?.uid
+        if(name.isNotEmpty()){
+            expenseProgress.value = true
+            db.collection(Constants.COLLECTION_NAME_EXPENSE).whereEqualTo("userId", userId)
+                .whereEqualTo("expenseDescription",name.toLowerCase())
+                .get()
+                .addOnSuccessListener {document->
+                    convertExpenseSearch(document,expenseData)
+                    expenseProgress.value = false
+                }
+                .addOnFailureListener {exc->
+                    handleException(exc,"Unable to fetch sales")
+                    print(exc)
+                    expenseProgress.value = false
+                }
+        }
+        else{
+            retrieveExpense()
+        }
+    }
+
+    fun expenseSearchByAmount(name:String){
+        val userId = auth.currentUser?.uid
+        if(name.isNotEmpty()){
+            expenseProgress.value = true
+            db.collection(Constants.COLLECTION_NAME_EXPENSE).whereEqualTo("userId", userId)
+                .whereEqualTo("expenseAmount",name.toLowerCase())
                 .get()
                 .addOnSuccessListener {document->
                     convertExpenseSearch(document,expenseData)
@@ -1430,7 +1755,7 @@ class AuthViewModel @Inject constructor(
     }
 
 
-    fun expenseSearchWhenTyping(name: String) {
+    fun expenseSearchWhenTypingByName(name: String) {
         val userId = auth.currentUser?.uid
         if (name.isNotEmpty()) {
             expenseProgress.value = true
@@ -1441,6 +1766,81 @@ class AuthViewModel @Inject constructor(
                 .whereEqualTo("userId", userId)
                 .whereGreaterThanOrEqualTo("expenseName", searchQuery)
                 .whereLessThan("expenseName", endQuery)
+                .get()
+                .addOnSuccessListener { snapshot ->
+                    convertExpenseSearchWhenTyping(snapshot, expenseData)
+                    expenseProgress.value = false
+                }
+                .addOnFailureListener { exc ->
+                    handleException(exc, "Failed to search for stock")
+                    expenseProgress.value = false
+                }
+        } else {
+            retrieveExpense()
+        }
+    }
+
+    fun expenseSearchWhenTypingByCategory(name: String) {
+        val userId = auth.currentUser?.uid
+        if (name.isNotEmpty()) {
+            expenseProgress.value = true
+            val searchQuery = name.trim().toLowerCase()
+            val endQuery = searchQuery + '\uf8ff' // Unicode character that is higher than any other character
+
+            db.collection(Constants.COLLECTION_NAME_EXPENSE)
+                .whereEqualTo("userId", userId)
+                .whereGreaterThanOrEqualTo("expenseCategory", searchQuery)
+                .whereLessThan("expenseCategory", endQuery)
+                .get()
+                .addOnSuccessListener { snapshot ->
+                    convertExpenseSearchWhenTyping(snapshot, expenseData)
+                    expenseProgress.value = false
+                }
+                .addOnFailureListener { exc ->
+                    handleException(exc, "Failed to search for stock")
+                    expenseProgress.value = false
+                }
+        } else {
+            retrieveExpense()
+        }
+    }
+
+    fun expenseSearchWhenTypingByAmount(name: String) {
+        val userId = auth.currentUser?.uid
+        if (name.isNotEmpty()) {
+            expenseProgress.value = true
+            val searchQuery = name.trim().toLowerCase()
+            val endQuery = searchQuery + '\uf8ff' // Unicode character that is higher than any other character
+
+            db.collection(Constants.COLLECTION_NAME_EXPENSE)
+                .whereEqualTo("userId", userId)
+                .whereGreaterThanOrEqualTo("expenseAmount", searchQuery)
+                .whereLessThan("expenseAmount", endQuery)
+                .get()
+                .addOnSuccessListener { snapshot ->
+                    convertExpenseSearchWhenTyping(snapshot, expenseData)
+                    expenseProgress.value = false
+                }
+                .addOnFailureListener { exc ->
+                    handleException(exc, "Failed to search for stock")
+                    expenseProgress.value = false
+                }
+        } else {
+            retrieveExpense()
+        }
+    }
+
+    fun expenseSearchWhenTypingByDescription(name: String) {
+        val userId = auth.currentUser?.uid
+        if (name.isNotEmpty()) {
+            expenseProgress.value = true
+            val searchQuery = name.trim().toLowerCase()
+            val endQuery = searchQuery + '\uf8ff' // Unicode character that is higher than any other character
+
+            db.collection(Constants.COLLECTION_NAME_EXPENSE)
+                .whereEqualTo("userId", userId)
+                .whereGreaterThanOrEqualTo("expenseDescription", searchQuery)
+                .whereLessThan("expenseDescription", endQuery)
                 .get()
                 .addOnSuccessListener { snapshot ->
                     convertExpenseSearchWhenTyping(snapshot, expenseData)
@@ -1495,12 +1895,56 @@ class AuthViewModel @Inject constructor(
     }
 
 
-    fun invoiceSearch(name:String){
+    fun invoiceSearchByInvoiceNumber(name:String){
         val userId = auth.currentUser?.uid
         if(name.isNotEmpty()){
             invoiceSearchProgress.value = true
             db.collection(Constants.COLLECTION_NAME_SALES).whereEqualTo("userId", userId)
                 .whereIn("salesNo", listOf(name.lowercase(), name.uppercase()))
+                .get()
+                .addOnSuccessListener {document->
+                    convertInvoiceSearch(document,invoiceData)
+                    invoiceSearchProgress.value = false
+                }
+                .addOnFailureListener {exc->
+                    handleException(exc,"Unable to fetch sales")
+                    print(exc)
+                    invoiceSearchProgress.value = false
+                }
+        }
+        else{
+            retrieveInvoices()
+        }
+    }
+
+    fun invoiceSearchByCustomerName(name:String){
+        val userId = auth.currentUser?.uid
+        if(name.isNotEmpty()){
+            invoiceSearchProgress.value = true
+            db.collection(Constants.COLLECTION_NAME_SALES).whereEqualTo("userId", userId)
+                .whereIn("customerName", listOf(name.lowercase(), name.uppercase()))
+                .get()
+                .addOnSuccessListener {document->
+                    convertInvoiceSearch(document,invoiceData)
+                    invoiceSearchProgress.value = false
+                }
+                .addOnFailureListener {exc->
+                    handleException(exc,"Unable to fetch sales")
+                    print(exc)
+                    invoiceSearchProgress.value = false
+                }
+        }
+        else{
+            retrieveInvoices()
+        }
+    }
+
+    fun invoiceSearchByTotalAmount(name:String){
+        val userId = auth.currentUser?.uid
+        if(name.isNotEmpty()){
+            invoiceSearchProgress.value = true
+            db.collection(Constants.COLLECTION_NAME_SALES).whereEqualTo("userId", userId)
+                .whereIn("amountPaid", listOf(name.lowercase(), name.uppercase()))
                 .get()
                 .addOnSuccessListener {document->
                     convertInvoiceSearch(document,invoiceData)
@@ -1530,7 +1974,7 @@ class AuthViewModel @Inject constructor(
 
 
     // search for invoice as user type
-    fun invoiceSearchWhenTyping(name: String) {
+    fun invoiceSearchByInvoiceNumberWhenTyping(name: String) {
         val userId = auth.currentUser?.uid
         if (name.isNotEmpty()) {
             invoiceSearchProgress.value = true
@@ -1541,6 +1985,58 @@ class AuthViewModel @Inject constructor(
                 .whereEqualTo("userId", userId)
                 .whereGreaterThanOrEqualTo("salesNo", searchQuery)
                 .whereLessThan("salesNo", endQuery)
+                .get()
+                .addOnSuccessListener { snapshot ->
+                    convertSearchedInvoiceSales(snapshot, invoiceData)
+                    invoiceSearchProgress.value = false
+                }
+                .addOnFailureListener { exc ->
+                    handleException(exc, "Failed to search for stock")
+                    invoiceSearchProgress.value = false
+                }
+        } else {
+            retrieveInvoices()
+        }
+    }
+
+
+    fun invoiceSearchByTotalAmountWhenTyping(name: String) {
+        val userId = auth.currentUser?.uid
+        if (name.isNotEmpty()) {
+            invoiceSearchProgress.value = true
+            val searchQuery = name.trim().toUpperCase()
+            val endQuery = searchQuery + '\uf8ff' // Unicode character that is higher than any other character
+
+            db.collection(Constants.COLLECTION_NAME_SALES)
+                .whereEqualTo("userId", userId)
+                .whereGreaterThanOrEqualTo("amountPaid", searchQuery)
+                .whereLessThan("amountPaid", endQuery)
+                .get()
+                .addOnSuccessListener { snapshot ->
+                    convertSearchedInvoiceSales(snapshot, invoiceData)
+                    invoiceSearchProgress.value = false
+                }
+                .addOnFailureListener { exc ->
+                    handleException(exc, "Failed to search for stock")
+                    invoiceSearchProgress.value = false
+                }
+        } else {
+            retrieveInvoices()
+        }
+    }
+
+
+    fun invoiceSearchByCustomerNameWhenTyping(name: String) {
+        val userId = auth.currentUser?.uid
+        if (name.isNotEmpty()) {
+            invoiceSearchProgress.value = true
+            val searchQuery = name.trim().toUpperCase()
+            val endQuery = searchQuery + '\uf8ff' // Unicode character that is higher than any other character
+
+            db.collection(Constants.COLLECTION_NAME_SALES)
+                .whereEqualTo("userId", userId)
+                .whereGreaterThanOrEqualTo("customerName", searchQuery)
+                .whereLessThan("customerName", endQuery)
                 .get()
                 .addOnSuccessListener { snapshot ->
                     convertSearchedInvoiceSales(snapshot, invoiceData)
@@ -1635,7 +2131,7 @@ class AuthViewModel @Inject constructor(
 
 
     //delete a singleSale
-    fun deleteSingleSale(salesId: String, singleSale: String, exist:String, onSuccess: () -> Unit) {
+    fun deleteSingleSale(salesId: String, singleSale: String, exist:String, type:String, stockId:String, onSuccess: () -> Unit) {
         deleteSaleProgress.value = true
         db.collection(Constants.COLLECTION_NAME_SALES)
             .document(salesId)
@@ -1700,6 +2196,7 @@ class AuthViewModel @Inject constructor(
                                                 //update stock
                                                 db.collection(Constants.COLLECTION_NAME_STOCKS)
                                                     .whereEqualTo("stockName", salesProductName?.productName.toString())
+                                                    .whereEqualTo("stockId",stockId)
                                                     .get()
                                                     .addOnSuccessListener { stockDocuments ->
                                                         if(exist=="true") {
@@ -1716,13 +2213,12 @@ class AuthViewModel @Inject constructor(
                                                                 }
                                                             } else {
                                                                 deleteSaleProgress.value = false
-                                                                handleException(
-                                                                    null,
-                                                                    "Stock document not found for deletion"
-                                                                )
+                                                                handleException(null, "Stock document not found for deletion")
                                                             }
                                                         }
-                                                        continueWithDeleteSale(salesId, singleSale, exist, onSuccess, Stock())
+                                                        else {
+                                                            continueWithDeleteSale(salesId, singleSale, exist, onSuccess, Stock())
+                                                        }
                                                     }
                                                     .addOnFailureListener { e ->
                                                         deleteSaleProgress.value = false
@@ -1747,10 +2243,12 @@ class AuthViewModel @Inject constructor(
 
                     }
                 } else {
+                    deleteSaleProgress.value = false
                     handleException(customMessage = "Sales does not exist")
                 }
             }
             .addOnFailureListener { e ->
+                deleteSaleProgress.value = false
                 handleException(e, "Failed to delete sale")
             }
     }
@@ -1766,15 +2264,19 @@ class AuthViewModel @Inject constructor(
                         // Filter and update the sales list
 
                         val updatedSalesList = it.sales?.filterNot { sale -> sale.saleId == singleSale }
-                        val sales = updatedSalesList?.sumByDouble { sale -> sale.totalPrice?.toDoubleOrNull() ?: 0.0 }
+                        val sale = updatedSalesList?.sumByDouble { sale -> sale.totalPrice?.toDoubleOrNull() ?: 0.0 }
                         val profit = updatedSalesList?.sumByDouble { sale -> sale.profit?.toDoubleOrNull() ?: 0.0 }
                         val quantity = updatedSalesList?.sumByDouble { sale -> sale.quantity?.toDoubleOrNull() ?: 0.0 }
                         it.sales = updatedSalesList
-                        it.sales = updatedSalesList
-                        it.totalPrice = sales?.toString() ?: "0.0"
+                        it.totalPrice = sale?.toString() ?: "0.0"
                         it.totalProfit = profit?.toString() ?: "0.0"
                         it.totalQuantity = quantity?.toString() ?: "0.0"
-
+                        if(sales.type=="SR") {
+                            it.amountPaid = sale?.toString() ?: "0.0"
+                        }
+                        else{
+                            it.balance = sale?.toString() ?: "0.0"
+                        }
 
                         deleteSales(salesId, it, onSuccess)
                         if(exist == "true") {
@@ -1783,13 +2285,16 @@ class AuthViewModel @Inject constructor(
 
                     }
                 } else {
+                    deleteSaleProgress.value = false
                     handleException(customMessage = "Sales does not exist")
                 }
             }
             .addOnFailureListener { e ->
+                deleteSaleProgress.value = false
                 handleException(e, "Failed to delete sale")
             }
     }
+
     fun deleteSales(salesId: String, updatedSales: Sales,onSuccess: () -> Unit) {
         val userId = auth.currentUser!!.uid
         db.collection(Constants.COLLECTION_NAME_SALES)
@@ -1798,7 +2303,8 @@ class AuthViewModel @Inject constructor(
                 "sales", updatedSales.sales,
                 "totalPrice", updatedSales.totalPrice,
                 "totalProfit", updatedSales.totalProfit,
-                "totalQuantity", updatedSales.totalQuantity
+                "totalQuantity", updatedSales.totalQuantity,
+                "amountPaid", updatedSales.amountPaid
 
                 )
             .addOnSuccessListener {
@@ -1811,17 +2317,21 @@ class AuthViewModel @Inject constructor(
                     retrieveInvoices()
                     retrieveSales()
                     retrieveStocks()
-                    getTotalStockValue()
+//                    getTotalStockValue()
+                    getAllSaleReceiptToday()
                     getTotalSaleReceiptToday()
+                    getTotalProfitToday()
+                    getTotalExpenseToday()
                     getTotalCreditReceiptToday()
                     getMostPurchasedProductsToday()
-                    getTotalAmountOwingCustomer()
-                    getUserData(userId)
+                    getAllPurchasedProductsToday()
+//                    getTotalAmountOwingCustomer()
                     retrieveCustomer()
                     onSuccess.invoke()
                 }
             }
             .addOnFailureListener { e ->
+                deleteSaleProgress.value = false
                 handleException(customMessage = "failed to delete sale")
             }
     }
@@ -1833,18 +2343,22 @@ class AuthViewModel @Inject constructor(
             .delete()
             .addOnSuccessListener {
                 getSaleProgress.value = false
+                deleteSaleProgress.value = false
                 popupNotification.value = Event("Sales deleted successfully")
                 retrieveInvoices()
                 retrieveSales()
                 retrieveStocks()
-                getUserData(uid.toString())
                 retrieveCustomer()
+                getAllSaleReceiptToday()
                 getTotalSaleReceiptToday()
+                getTotalProfitToday()
+                getTotalExpenseToday()
                 getTotalCreditReceiptToday()
                 onSuccess.invoke()
 
             }
             .addOnFailureListener { e ->
+                deleteSaleProgress.value = false
                 handleException(customMessage = "Failed to delete sale")
             }
     }
@@ -1930,10 +2444,8 @@ class AuthViewModel @Inject constructor(
                                                     if(sale.exist.toString()=="true") {
 
                                                         db.collection(Constants.COLLECTION_NAME_STOCKS)
-                                                            .whereEqualTo(
-                                                                "stockName",
-                                                                sale.productName.toString()
-                                                            )
+                                                            .whereEqualTo("stockName", sale.productName.toString())
+                                                            .whereEqualTo("userId",sale.userId.toString())
                                                             .get()
                                                             .addOnSuccessListener { stockDocuments ->
                                                                 if (!stockDocuments.isEmpty) {
@@ -2052,19 +2564,25 @@ class AuthViewModel @Inject constructor(
                         val stockRef = stockDocument.documents.first().reference
                         stockRef.update("stockQuantity", stock.stockQuantity, "stockQuantitySold", stock.stockQuantitySold)
                             .addOnSuccessListener {
+                                deleteSaleProgress.value = false
                             }
                             .addOnFailureListener { e ->
-
+                                handleException(e,"error:")
+                                deleteSaleProgress.value = false
                             }
                     } else {
-
+                        deleteSaleProgress.value = false
                     }
                 }
                 .addOnFailureListener { e ->
+                    handleException(e,"error:")
+                    deleteSaleProgress.value = false
 
                 }
-        } else {
-
+        }
+        else {
+            handleException(customMessage = "error: stock id is null")
+            deleteSaleProgress.value = false
         }
     }
 
@@ -2079,6 +2597,7 @@ class AuthViewModel @Inject constructor(
         saleRef.get()
             .addOnSuccessListener {saleDocument->
                 if(saleDocument.exists()){
+
                     val sales = saleDocument.toObject(Sales::class.java)
 
                     val updateSingleSale = sales?.sales?.find { it.saleId == singleSaleId }
@@ -2107,6 +2626,7 @@ class AuthViewModel @Inject constructor(
                     sales?.totalQuantity = updatedTotalQuantity.toString()
                     sales?.totalPrice = updatedTotalAmount.toString()
                     sales?.totalProfit = updatedTotalProfit.toString()
+                    sales?.amountPaid = updatedTotalAmount.toString()
 
                     if(sale.type=="CR"){
                         sales?.balance = updatedTotalAmount.toString()
@@ -2159,7 +2679,8 @@ class AuthViewModel @Inject constructor(
                                         singleSale,
                                         onSuccess
                                     )
-                                } else {
+                                }
+                                else {
                                     updateSingleStock(
                                         stockId,
                                         quantity.toInt() - unmodifiedSingle.value?.quantity!!.toInt(),
@@ -2170,119 +2691,138 @@ class AuthViewModel @Inject constructor(
                                         onSuccess
                                     )
                                 }
-                                popupNotification.value = Event("Sale updated successfully")
-                                deleteSaleProgress.value = false
                             }
-                            popupNotification.value = Event("Sale updated successfully")
-                            deleteSaleProgress.value = false
-                            retrieveInvoices()
-                            refreshSales()
-                            retrieveUser()
-                            retrieveSales()
-                            retrieveStocks()
-                            getTotalStockValue()
-                            getTotalSaleReceiptToday()
-                            getTotalCreditReceiptToday()
-                            getMostPurchasedProductsToday()
-                            getSingleSale(singleSale, sale)
-                            onSuccess.invoke()
+                            else {
+                                popupNotification.value = Event("Sale updated successfully")
+                                retrieveInvoices()
+                                refreshSales()
+                                retrieveUser()
+                                retrieveSales()
+                                retrieveStocks()
+                                getTotalStockValue()
+                                getAllSaleReceiptToday()
+                                getTotalSaleReceiptToday()
+                                getTotalProfitToday()
+                                getTotalExpenseToday()
+                                getTotalCreditReceiptToday()
+                                getMostPurchasedProductsToday()
+                                getAllPurchasedProductsToday()
+                                getSingleSale(singleSale, sale)
+                                onSuccess.invoke()
+                            }
                         }
                         .addOnFailureListener{exc->
-                                handleException(exc,"Failed to update sale")
-                                deleteSaleProgress.value = false
+                            handleException(exc,"Failed to update sale")
+                            updatedSaleProgress.value = false
                         }
                 }
                 else{
                     handleException(customMessage = "Sale document does not exist")
-                    deleteSaleProgress.value = false
+                    updatedSaleProgress.value = false
                 }
             }
             .addOnFailureListener{
                     handleException(customMessage = "Failed to fetch sale document")
-                    deleteSaleProgress.value = false
+                    updatedSaleProgress.value = false
             }
 
     }
 
-    fun updateSingleStock(stockId: String, quantity: Int,saleDiff: String, profitDiff: String,sale: Sales, single: SingleSale, onSuccess: () -> Unit) {
+    fun updateSingleStock(
+        stockId: String,
+        quantity: Int,
+        saleDiff: String,
+        profitDiff: String,
+        sale: Sales,
+        single: SingleSale,
+        onSuccess: () -> Unit
+    ) {
         val currentUid = auth.currentUser?.uid
 
-        db.collection(Constants.COLLECTION_NAME_STOCKS).document(stockId).get()
-            .addOnSuccessListener { stockDocument ->
-                if (stockDocument.exists()) {
-                    val stock = stockDocument.toObject(Stock::class.java)
-                    val updateQuantityRemaining = stock?.stockQuantity?.toInt()!! - quantity
-                    val updatedQuantitySold = stock?.stockQuantitySold?.toInt()!! + quantity
+        if (currentUid == null) {
+            updatedSaleProgress.value = false
+            handleException(customMessage = "Current user ID is null")
+            return
+        }
 
-                    stock?.let {
-                        it.stockQuantitySold = updatedQuantitySold.toString()
-                        it.stockQuantity = updateQuantityRemaining.toString()
+        // Query to find the document with both stockId and userId
+        db.collection(Constants.COLLECTION_NAME_STOCKS)
+            .whereEqualTo("stockId", stockId)
+            .whereEqualTo("userId", currentUid)
+            .get()
+            .addOnSuccessListener { querySnapshot ->
+                if (!querySnapshot.isEmpty) {
+                    val stockDocument = querySnapshot.documents[0]
+                    val stock = stockDocument.toObject(Stock::class.java)
+
+                    stock?.let { stock ->
+                        val updateQuantityRemaining = stock.stockQuantity.toInt() - quantity
+                        val updatedQuantitySold = stock.stockQuantitySold.toInt() + quantity
+
+                        stock.stockQuantity = updateQuantityRemaining.toString()
+                        stock.stockQuantitySold = updatedQuantitySold.toString()
 
                         // Update the stock document with the new values
-                        db.collection(Constants.COLLECTION_NAME_STOCKS).document(stockId).set(it)
-                            .addOnSuccessListener {
+                        stockDocument.reference.set(stock).addOnSuccessListener {
+                            val userDocRef = db.collection(Constants.COLLECTION_NAME_USERS).document(currentUid)
 
-                                // Update totalSales and totalProfit of the user
-                                if (currentUid != null) {
-                                    db.collection(Constants.COLLECTION_NAME_USERS).document(currentUid)
-                                        .get()
-                                        .addOnSuccessListener { userDocument ->
-                                            if (userDocument.exists()) {
-                                                val user = userDocument.toObject(User::class.java)
+                            // Check if the user document exists
+                            userDocRef.get().addOnSuccessListener { userDocument ->
+                                if (userDocument.exists()) {
+                                    val user = userDocument.toObject(User::class.java)
 
-                                                user?.let {
-                                                    val updatedTotalSales =
-                                                        user.totalSales?.toDouble()!! + saleDiff.toDouble()
-                                                    val updatedTotalProfit =
-                                                        user.totalProfit?.toDouble()!! + profitDiff.toDouble()
+                                    user?.let { user ->
+                                        val updatedTotalSales = user.totalSales?.toDouble()!! + saleDiff.toDouble()
+                                        val updatedTotalProfit = user.totalProfit?.toDouble()!! + profitDiff.toDouble()
 
-                                                    it.totalSales = updatedTotalSales.toString()
-                                                    it.totalProfit = updatedTotalProfit.toString()
+                                        user.totalSales = updatedTotalSales.toString()
+                                        user.totalProfit = updatedTotalProfit.toString()
 
-                                                    // Update the user document with the new values
-                                                    db.collection(Constants.COLLECTION_NAME_USERS).document(currentUid)
-                                                        .set(it)
-                                                        .addOnSuccessListener {
-                                                            popupNotification.value = Event("Sale updated successfully")
-                                                            retrieveInvoices()
-                                                            refreshSales()
-                                                            retrieveUser()
-                                                            retrieveSales()
-                                                            retrieveStocks()
-                                                            getTotalStockValue()
-                                                            getTotalSaleReceiptToday()
-                                                            getTotalCreditReceiptToday()
-                                                            getMostPurchasedProductsToday()
-                                                            getSingleSale(single, sale)
-                                                            onSuccess.invoke()
-                                                        }
-                                                        .addOnFailureListener { exc ->
-                                                            handleException(
-                                                                exc,"failed to update total sale and profit"
-                                                            )
-                                                        }
-                                                }
-                                            } else {
-                                                handleException(customMessage = "User document does not exist")
-                                            }
+                                        // Update the user document with the new values
+                                        userDocRef.set(user).addOnSuccessListener {
+                                            popupNotification.value = Event("Sale updated successfully")
+                                            updatedSaleProgress.value = false
+                                            retrieveInvoices()
+                                            refreshSales()
+                                            retrieveUser()
+                                            retrieveSales()
+                                            retrieveStocks()
+                                            getTotalStockValue()
+                                            getAllSaleReceiptToday()
+                                            getTotalSaleReceiptToday()
+                                            getTotalProfitToday()
+                                            getTotalExpenseToday()
+                                            getTotalCreditReceiptToday()
+                                            getMostPurchasedProductsToday()
+                                            getAllPurchasedProductsToday()
+                                            getSingleSale(single, sale)
+                                            onSuccess.invoke()
+                                        }.addOnFailureListener { exc ->
+                                            handleException(exc, "Failed to update total sale and profit")
+                                            updatedSaleProgress.value = false
                                         }
-                                        .addOnFailureListener {
-                                            handleException(customMessage = "Failed to fetch user document")
-                                        }
+                                    }
                                 } else {
-                                    handleException(customMessage = "Current user ID is null")
+                                    handleException(customMessage = "User document does not exist")
+                                    updatedSaleProgress.value = false
                                 }
+                            }.addOnFailureListener {
+                                handleException(customMessage = "Failed to fetch user document")
+                                updatedSaleProgress.value = false
                             }
-                            .addOnFailureListener { exc ->
-                                handleException(exc, "Failed to update stock")
-                            }
+                        }.addOnFailureListener { exc ->
+                            handleException(exc, "Failed to update stock")
+                            updatedSaleProgress.value = false
+                        }
                     }
                 } else {
                     handleException(customMessage = "Stock document does not exist")
+                    updatedSaleProgress.value = false
                 }
             }
             .addOnFailureListener {
                 handleException(customMessage = "Failed to fetch stock document")
+                updatedSaleProgress.value = false
             }
     }
 
@@ -2381,8 +2921,9 @@ class AuthViewModel @Inject constructor(
     //get stock selected to update sale
 
      fun getStockSelected(productName:SingleSale){
+         val userId = auth.currentUser?.uid
          getStockProgress.value = true
-         db.collection(Constants.COLLECTION_NAME_STOCKS).whereEqualTo("stockName",productName.productName).get()
+         db.collection(Constants.COLLECTION_NAME_STOCKS).whereEqualTo("stockName",productName.productName).whereEqualTo("userId",userId).get()
              .addOnSuccessListener {querySnapshot->
                  if(!querySnapshot.isEmpty){
 
@@ -2627,9 +3168,13 @@ class AuthViewModel @Inject constructor(
                                     popupNotification.value = Event("Stock added successfully")
                                     retrieveStocks()
                                     getTotalStockValue()
+                                    getAllSaleReceiptToday()
                                     getTotalSaleReceiptToday()
+                                    getTotalProfitToday()
+                                    getTotalExpenseToday()
                                     getTotalCreditReceiptToday()
                                     getMostPurchasedProductsToday()
+                                    getAllPurchasedProductsToday()
                                     inProgress.value = false
                                     onSuccess.invoke()
                                 }
@@ -2855,6 +3400,133 @@ class AuthViewModel @Inject constructor(
     }
 
 
+
+
+
+    fun getTotalProfitToday(){
+
+        val userId = auth.currentUser?.uid
+
+        val date = System.currentTimeMillis()
+
+        val startOfDay = date / (24 * 60 * 60 * 1000) * (24 * 60 * 60 * 1000).toLong()
+        val endOfDay = startOfDay + (24 * 60 * 60 * 1000).toLong()
+
+        db.collection(Constants.COLLECTION_NAME_SALES)
+            .whereEqualTo("userId", userId)
+            .whereGreaterThanOrEqualTo("salesDate", startOfDay)
+            .whereLessThan("salesDate", endOfDay)
+            .get()
+            .addOnSuccessListener { documents ->
+
+                var profitToday = 0.0
+
+                for (document in documents) {
+
+                    val sales = document.toObject(Sales::class.java)
+
+                    for (singleSale in sales.sales!!) {
+                        val singleProfit = singleSale.profit?.toDoubleOrNull() ?: 0.0
+                        val singleQuantity = singleSale.quantity?.toDoubleOrNull() ?: 0.0
+
+                        val saleProfitAmount = singleProfit * singleQuantity
+                        profitToday += saleProfitAmount.toString().toDouble()
+                    }
+
+                }
+
+                totalProfitToday.value = profitToday
+
+                val updates = mapOf(
+                    "totalProfit" to totalProfitToday.value.toString(),
+                )
+                db.collection(Constants.COLLECTION_NAME_USERS).document(userId.toString()).update(updates)
+            }
+            .addOnFailureListener { exception ->
+                handleException(exception, "Unable to fetch sales")
+            }
+    }
+
+
+    fun getTotalExpenseToday(){
+
+        val userId = auth.currentUser?.uid
+
+        val date = System.currentTimeMillis()
+
+        val startOfDay = date / (24 * 60 * 60 * 1000) * (24 * 60 * 60 * 1000).toLong()
+        val endOfDay = startOfDay + (24 * 60 * 60 * 1000).toLong()
+
+        db.collection(Constants.COLLECTION_NAME_EXPENSE)
+            .whereEqualTo("userId", userId)
+            .whereGreaterThanOrEqualTo("expenseDate", startOfDay)
+            .whereLessThan("expenseDate", endOfDay)
+            .get()
+            .addOnSuccessListener { documents ->
+
+                var expenseToday = 0.0
+
+                for (document in documents) {
+
+                    val expense = document.toObject(Expense::class.java)
+
+                    val expenseAmount = expense.expenseAmount ?: 0.0
+
+                    expenseToday += expenseAmount.toString().toDouble()
+
+                }
+
+                totalExpenseToday.value = expenseToday
+                val updates = mapOf(
+                    "totalExpenses" to totalExpenseToday.value.toString(),
+                )
+                db.collection(Constants.COLLECTION_NAME_USERS).document(userId.toString()).update(updates)
+            }
+            .addOnFailureListener { exception ->
+                handleException(exception, "Unable to fetch sales")
+            }
+    }
+
+
+
+    fun getAllSaleReceiptToday() {
+
+        val userId = auth.currentUser?.uid
+
+        val date = System.currentTimeMillis()
+
+        val startOfDay = date / (24 * 60 * 60 * 1000) * (24 * 60 * 60 * 1000).toLong()
+        val endOfDay = startOfDay + (24 * 60 * 60 * 1000).toLong()
+
+        db.collection(Constants.COLLECTION_NAME_SALES)
+            .whereEqualTo("userId", userId)
+            .whereGreaterThanOrEqualTo("salesDate", startOfDay)
+            .whereLessThan("salesDate", endOfDay)
+            .get()
+            .addOnSuccessListener { documents ->
+
+                var totalSaleToday = 0.0
+
+                for (document in documents) {
+                    val sales = document.toObject(Sales::class.java)
+
+
+                    val saleAmount = sales.totalPrice ?: 0.0
+
+                    totalSaleToday += saleAmount.toString().toDouble()
+                }
+
+                AllsalesTotalToday.value = totalSaleToday
+                val updates = mapOf(
+                    "totalSales" to totalSaleToday.toString(),
+                )
+                db.collection(Constants.COLLECTION_NAME_USERS).document(userId.toString()).update(updates)
+            }
+            .addOnFailureListener { exception ->
+                handleException(exception, "Unable to fetch sales")
+            }
+    }
+
     fun getTotalSaleReceiptToday() {
 
         val userId = auth.currentUser?.uid
@@ -2893,6 +3565,9 @@ class AuthViewModel @Inject constructor(
                 handleException(exception, "Unable to fetch sales")
             }
     }
+
+
+
 
     fun getTotalCreditReceiptToday() {
 
@@ -3002,6 +3677,60 @@ class AuthViewModel @Inject constructor(
     }
 
 
+    fun getAllPurchasedProductsToday() {
+        val userId = auth.currentUser?.uid
+
+        val date = System.currentTimeMillis()
+
+        val startOfDay = date / (24 * 60 * 60 * 1000) * (24 * 60 * 60 * 1000).toLong()
+        val endOfDay = startOfDay + (24 * 60 * 60 * 1000).toLong()
+
+        db.collection(Constants.COLLECTION_NAME_SALES)
+            .whereEqualTo("userId", userId)
+            .whereGreaterThanOrEqualTo("salesDate", startOfDay)
+            .whereLessThan("salesDate", endOfDay)
+            .get()
+            .addOnSuccessListener { documents ->
+
+                // Map to store product names and their corresponding quantities
+                val productQuantityMap = mutableMapOf<String, Int>()
+
+                for (document in documents) {
+                    val sales = document.toObject(Sales::class.java)
+
+                    // Iterate through SingleSales in each Sale
+                    sales?.sales?.forEach { singleSale ->
+                        val productName = singleSale.productName
+                        val quantity = singleSale.quantity?.toInt() ?: 0
+
+                        // Update quantity for the product in the map
+                        val currentQuantity = productQuantityMap.getOrDefault(productName, 0)
+                        productQuantityMap[productName.toString()] = currentQuantity + quantity
+                    }
+                }
+
+                // Convert the map to a string to store or display
+                val allPurchasedProducts = productQuantityMap.entries.joinToString { "${it.key}: ${it.value}" }
+
+                // Update userData and relevant UI components
+                if (productQuantityMap.isNotEmpty()) {
+                    userData.value!!.goodsSold = allPurchasedProducts
+                    goodsSold.value = allPurchasedProducts
+
+                    val updates = mapOf(
+                        "goodsSold" to goodsSold.value
+                    )
+                    db.collection(Constants.COLLECTION_NAME_USERS).document(userId.toString()).update(updates)
+                } else {
+                    goodsSold.value = "no data yet"
+                }
+            }
+            .addOnFailureListener { exception ->
+                handleException(exception, "Unable to fetch sales")
+            }
+    }
+
+
 
     fun deleteExpense(amount:String, expenseId:String, userId: String, onSuccess: () -> Unit){
         expenseProgress.value = true
@@ -3040,7 +3769,6 @@ class AuthViewModel @Inject constructor(
                 handleException(exc, "failed to delete expense")
             }
 
-
     }
 
     fun deleteStock(stockId:String, onSuccess: () -> Unit){
@@ -3059,7 +3787,6 @@ class AuthViewModel @Inject constructor(
                 deleteStockProgress.value = false
                 handleException(exc, "failed to delete stock")
             }
-
 
     }
 
@@ -3080,8 +3807,6 @@ class AuthViewModel @Inject constructor(
                 deleteCustomerProgress.value = false
                 handleException(exc, "failed to delete customer")
             }
-
-
     }
 
     fun checkExpiryDate(){
@@ -3183,6 +3908,7 @@ class AuthViewModel @Inject constructor(
         when (option) {
 
             "This Week" -> {
+                dailyReportProgress.value = true
 
                 val calendar = Calendar.getInstance()
                 calendar.timeInMillis = currentTimestamp
@@ -3205,9 +3931,11 @@ class AuthViewModel @Inject constructor(
                 val startOfWeekTimestamp = calendar.timeInMillis
 
 
+                val mostSoldGoodQuantityMap = mutableMapOf<String, Int>()
                 query.whereEqualTo("userId",userId)
+                    .whereGreaterThanOrEqualTo("date", startOfWeekTimestamp)
                     .whereLessThanOrEqualTo("date", currentTimestamp)
-                    .whereGreaterThanOrEqualTo("date", startOfWeekTimestamp).get()
+                    .get()
                     .addOnSuccessListener { document ->
                         val dailyReports = document.toObjects(DailyReport::class.java)
                         // Calculate totals
@@ -3218,7 +3946,42 @@ class AuthViewModel @Inject constructor(
                         val profit = dailyReports.sumOf { it.totalProfitToday?.toDoubleOrNull() ?: 0.0 }
                         val profitAfterExpenseSum = dailyReports.sumOf { it.profitAfterExpense?.toDoubleOrNull() ?: 0.0 }
 
-                        val mostSoldGoodQuantityMap = mutableMapOf<String, Int>()
+
+                        val userMostSoldGood = userData.value?.mostSoldGoodToday ?: ""
+                        val userMostSoldGoodQty = userData.value?.mostSoldGoodQuantity?.toIntOrNull() ?: 0
+
+
+                        val userSoldGoods = userData.value?.goodsSold ?: ""
+                        val userSoldGoodsMap = mutableMapOf<String, Int>()
+
+                        // Parse userSoldGoods string into a map
+                        if (userSoldGoods.isNotEmpty()) {
+                            userSoldGoods.split(",").forEach {
+                                val parts = it.split(":")
+                                if (parts.size == 2) {
+                                    val productName = parts[0].trim()
+                                    val quantity = parts[1].trim().toIntOrNull() ?: 0
+                                    userSoldGoodsMap[productName] = quantity
+                                }
+                            }
+                        }
+
+                        for (report in dailyReports) {
+                            val soldGoodsString = report.goodsSold ?: ""
+                            // Parse soldGoodsString into a map and update userSoldGoodsMap
+                            soldGoodsString.split(",").forEach {
+                                val parts = it.split(":")
+                                if (parts.size == 2) {
+                                    val productName = parts[0].trim()
+                                    val quantity = parts[1].trim().toIntOrNull() ?: 0
+                                    val currentQuantity = userSoldGoodsMap.getOrDefault(productName, 0)
+                                    userSoldGoodsMap[productName] = currentQuantity + quantity
+                                }
+                            }
+                        }
+
+                        val goodsSoldString = userSoldGoodsMap.entries.joinToString { "${it.key}: ${it.value}" }
+                        goodsSold.value = goodsSoldString
 
                         for (report in dailyReports) {
                             val mostSoldGoodsString = report.mostSoldGood ?: ""
@@ -3235,7 +3998,20 @@ class AuthViewModel @Inject constructor(
                                 val currentQuantity = mostSoldGoodQuantityMap.getOrDefault(mostSoldGood, 0)
                                 mostSoldGoodQuantityMap[mostSoldGood] = currentQuantity + mostSoldGoodQuantity
                             }
+
+                            if (mostSoldGoods.contains(userMostSoldGood)) {
+                                val currentQuantity = mostSoldGoodQuantityMap.getOrDefault(userMostSoldGood, 0)
+                                mostSoldGoodQuantityMap[userMostSoldGood] = currentQuantity + userMostSoldGoodQty
+                            }
+
+                            if (userMostSoldGood.isNotEmpty() && !mostSoldGoodQuantityMap.containsKey(userMostSoldGood)) {
+                                mostSoldGoodQuantityMap[userMostSoldGood] = userMostSoldGoodQty
+                            }
+
                         }
+
+
+
 
                         val maxSoldGoodQuantity = mostSoldGoodQuantityMap.values.maxOrNull()
 
@@ -3247,8 +4023,8 @@ class AuthViewModel @Inject constructor(
                             if (mostSoldGoods.isNotEmpty()) {
                                 val mostSoldGood = mostSoldGoods.toString()
                                 val mostSoldGoodQuantitySum = maxSoldGoodQuantity.toString()
-                                mostBoughtGoodFilter.value = mostSoldGood
-                                mostBoughtGoodQuantityFilter.value = mostSoldGoodQuantitySum.toString()
+                                mostBoughtGoodToday.value = mostSoldGood
+                                mostBoughtGoodQuantity.value = mostSoldGoodQuantitySum.toString()
 
                             } else {
                                 // Handle the case where there are no most sold goods yet
@@ -3267,17 +4043,18 @@ class AuthViewModel @Inject constructor(
                         totalExpenseFilter.value = expensesTotalSum + userData.value!!.totalExpenses?.toDouble()!!
                         totalProfitFilter.value = profit + userData.value!!.totalProfit?.toDouble()!!
                         totalProfitAfterExpenseFilter.value = profitAfterExpenseSum + userData.value!!.totalProfit?.toDouble()!! - userData.value!!.totalExpenses?.toDouble()!!
-
-
+                        dailyReportProgress.value = false
                         // Handle the retrieved daily reports and totals
                     }
                     .addOnFailureListener { exception ->
+                        dailyReportProgress.value = false
                       handleException(exception,"error:")
                     }
             }
 
             "This Month" -> {
 
+                dailyReportProgress.value = true
                 val calendar = Calendar.getInstance()
                 calendar.timeInMillis = currentTimestamp
 
@@ -3291,6 +4068,7 @@ class AuthViewModel @Inject constructor(
                 val startOfMonthTimestamp = calendar.timeInMillis
 
 
+                val mostSoldGoodQuantityMap = mutableMapOf<String, Int>()
                 query.whereEqualTo("userId",userId)
                     .whereGreaterThanOrEqualTo("date", startOfMonthTimestamp)
                     .whereLessThanOrEqualTo("date", currentTimestamp)
@@ -3307,7 +4085,40 @@ class AuthViewModel @Inject constructor(
                         val profit = dailyReports.sumOf { it.totalProfitToday?.toDoubleOrNull() ?: 0.0 }
                         val profitAfterExpenseSum = dailyReports.sumOf { it.profitAfterExpense?.toDoubleOrNull() ?: 0.0 }
 
-                        val mostSoldGoodQuantityMap = mutableMapOf<String, Int>()
+                        val userMostSoldGood = userData.value?.mostSoldGoodToday ?: ""
+                        val userMostSoldGoodQty = userData.value?.mostSoldGoodQuantity?.toIntOrNull() ?: 0
+
+                        val userSoldGoods = userData.value?.goodsSold ?: ""
+                        val userSoldGoodsMap = mutableMapOf<String, Int>()
+
+                        // Parse userSoldGoods string into a map
+                        if (userSoldGoods.isNotEmpty()) {
+                            userSoldGoods.split(",").forEach {
+                                val parts = it.split(":")
+                                if (parts.size == 2) {
+                                    val productName = parts[0].trim()
+                                    val quantity = parts[1].trim().toIntOrNull() ?: 0
+                                    userSoldGoodsMap[productName] = quantity
+                                }
+                            }
+                        }
+
+                        for (report in dailyReports) {
+                            val soldGoodsString = report.goodsSold ?: ""
+                            // Parse soldGoodsString into a map and update userSoldGoodsMap
+                            soldGoodsString.split(",").forEach {
+                                val parts = it.split(":")
+                                if (parts.size == 2) {
+                                    val productName = parts[0].trim()
+                                    val quantity = parts[1].trim().toIntOrNull() ?: 0
+                                    val currentQuantity = userSoldGoodsMap.getOrDefault(productName, 0)
+                                    userSoldGoodsMap[productName] = currentQuantity + quantity
+                                }
+                            }
+                        }
+
+                        val goodsSoldString = userSoldGoodsMap.entries.joinToString { "${it.key}: ${it.value}" }
+                        goodsSold.value = goodsSoldString
 
                         for (report in dailyReports) {
                             val mostSoldGoodsString = report.mostSoldGood ?: ""
@@ -3324,6 +4135,15 @@ class AuthViewModel @Inject constructor(
                                 val currentQuantity = mostSoldGoodQuantityMap.getOrDefault(mostSoldGood, 0)
                                 mostSoldGoodQuantityMap[mostSoldGood] = currentQuantity + mostSoldGoodQuantity
                             }
+
+                            if (mostSoldGoods.contains(userMostSoldGood)) {
+                                val currentQuantity = mostSoldGoodQuantityMap.getOrDefault(userMostSoldGood, 0)
+                                mostSoldGoodQuantityMap[userMostSoldGood] = currentQuantity + userMostSoldGoodQty
+                            }
+
+                            if (userMostSoldGood.isNotEmpty() && !mostSoldGoodQuantityMap.containsKey(userMostSoldGood)) {
+                                mostSoldGoodQuantityMap[userMostSoldGood] = userMostSoldGoodQty
+                            }
                         }
 
                         val maxSoldGoodQuantity = mostSoldGoodQuantityMap.values.maxOrNull()
@@ -3336,8 +4156,8 @@ class AuthViewModel @Inject constructor(
                             if (mostSoldGoods.isNotEmpty()) {
                                 val mostSoldGood = mostSoldGoods.toString()
                                 val mostSoldGoodQuantitySum = maxSoldGoodQuantity.toString()
-                                mostBoughtGoodFilter.value = mostSoldGood
-                                mostBoughtGoodQuantityFilter.value = mostSoldGoodQuantitySum.toString()
+                                mostBoughtGoodToday.value = mostSoldGood
+                                mostBoughtGoodQuantity.value = mostSoldGoodQuantitySum.toString()
 
                             } else {
                                 // Handle the case where there are no most sold goods yet
@@ -3355,10 +4175,12 @@ class AuthViewModel @Inject constructor(
                         totalProfitFilter.value = profit + userData.value!!.totalProfit?.toDouble()!!
                         totalProfitAfterExpenseFilter.value = profitAfterExpenseSum + userData.value!!.totalProfit?.toDouble()!! - userData.value!!.totalExpenses?.toDouble()!!
 
+                        dailyReportProgress.value = false
 
                             // Handle the retrieved daily reports and totals
                         }
                         .addOnFailureListener { exception ->
+                            dailyReportProgress.value = false
                             handleException(exception,"error:")
                         }
 
@@ -3368,6 +4190,8 @@ class AuthViewModel @Inject constructor(
 
             // No additional date filter for "All Time"
             "All Time" -> {
+                dailyReportProgress.value = true
+                val mostSoldGoodQuantityMap = mutableMapOf<String, Int>()
                 query.whereEqualTo("userId",userId)
                     .get()
                     .addOnSuccessListener { document ->
@@ -3382,7 +4206,40 @@ class AuthViewModel @Inject constructor(
                         val profitAfterExpenseSum = dailyReports.sumOf { it.profitAfterExpense?.toDoubleOrNull() ?: 0.0 }
 
                         // Handle most sold good and quantity
-                        val mostSoldGoodQuantityMap = mutableMapOf<String, Int>()
+                        val userMostSoldGood = userData.value?.mostSoldGoodToday ?: ""
+                        val userMostSoldGoodQty = userData.value?.mostSoldGoodQuantity?.toIntOrNull() ?: 0
+
+                        val userSoldGoods = userData.value?.goodsSold ?: ""
+                        val userSoldGoodsMap = mutableMapOf<String, Int>()
+
+                        // Parse userSoldGoods string into a map
+                        if (userSoldGoods.isNotEmpty()) {
+                            userSoldGoods.split(",").forEach {
+                                val parts = it.split(":")
+                                if (parts.size == 2) {
+                                    val productName = parts[0].trim()
+                                    val quantity = parts[1].trim().toIntOrNull() ?: 0
+                                    userSoldGoodsMap[productName] = quantity
+                                }
+                            }
+                        }
+
+                        for (report in dailyReports) {
+                            val soldGoodsString = report.goodsSold ?: ""
+                            // Parse soldGoodsString into a map and update userSoldGoodsMap
+                            soldGoodsString.split(",").forEach {
+                                val parts = it.split(":")
+                                if (parts.size == 2) {
+                                    val productName = parts[0].trim()
+                                    val quantity = parts[1].trim().toIntOrNull() ?: 0
+                                    val currentQuantity = userSoldGoodsMap.getOrDefault(productName, 0)
+                                    userSoldGoodsMap[productName] = currentQuantity + quantity
+                                }
+                            }
+                        }
+
+                        val goodsSoldString = userSoldGoodsMap.entries.joinToString { "${it.key}: ${it.value}" }
+                        goodsSold.value = goodsSoldString
 
                         for (report in dailyReports) {
                             val mostSoldGoodsString = report.mostSoldGood ?: ""
@@ -3399,6 +4256,15 @@ class AuthViewModel @Inject constructor(
                                 val currentQuantity = mostSoldGoodQuantityMap.getOrDefault(mostSoldGood, 0)
                                 mostSoldGoodQuantityMap[mostSoldGood] = currentQuantity + mostSoldGoodQuantity
                             }
+
+                            if (mostSoldGoods.contains(userMostSoldGood)) {
+                                val currentQuantity = mostSoldGoodQuantityMap.getOrDefault(userMostSoldGood, 0)
+                                mostSoldGoodQuantityMap[userMostSoldGood] = currentQuantity + userMostSoldGoodQty
+                            }
+
+                            if (userMostSoldGood.isNotEmpty() && !mostSoldGoodQuantityMap.containsKey(userMostSoldGood)) {
+                                mostSoldGoodQuantityMap[userMostSoldGood] = userMostSoldGoodQty
+                            }
                         }
 
                         val maxSoldGoodQuantity = mostSoldGoodQuantityMap.values.maxOrNull()
@@ -3411,8 +4277,8 @@ class AuthViewModel @Inject constructor(
                             if (mostSoldGoods.isNotEmpty()) {
                                 val mostSoldGood = mostSoldGoods.toString()
                                 val mostSoldGoodQuantitySum = maxSoldGoodQuantity.toString()
-                                mostBoughtGoodFilter.value = mostSoldGood
-                                mostBoughtGoodQuantityFilter.value = mostSoldGoodQuantitySum.toString()
+                                mostBoughtGoodToday.value = mostSoldGood
+                                mostBoughtGoodQuantity.value = mostSoldGoodQuantitySum.toString()
 
                             } else {
                                 // Handle the case where there are no most sold goods yet
@@ -3432,8 +4298,10 @@ class AuthViewModel @Inject constructor(
 
 
                         // Handle the retrieved daily reports and totals
+                        dailyReportProgress.value = false
                     }
                     .addOnFailureListener { exception ->
+                        dailyReportProgress.value = false
                         // Handle failure
                     }
             }
@@ -3470,53 +4338,145 @@ class AuthViewModel @Inject constructor(
         notificationManager.notify(notificationId, notification)
     }
 
-//     fun ComponentActivity.printDocument() {
-//
-//        val printManager = getSystemService(Context.PRINT_SERVICE) as PrintManager
-//
-//        val printAdapter = object : PrintDocumentAdapter() {
-//            override fun onLayout(
-//                oldAttributes: PrintAttributes?,
-//                newAttributes: PrintAttributes,
-//                cancellationSignal: CancellationSignal?,
-//                callback: LayoutResultCallback,
-//                extras: Bundle?
-//            ) {
-//                // Respond to onLayout callback
-//                // You may need to calculate the print layout based on your composable content
-//            }
-//
-//            override fun onWrite(
-//                pages: Array<out PageRange>?,
-//                destination: ParcelFileDescriptor?,
-//                cancellationSignal: CancellationSignal?,
-//                callback: WriteResultCallback
-//            ) {
-//                // Respond to onWrite callback
-//                // Write the content to the file descriptor, which will be printed
-//            }
-//
-//            override fun onFinish() {
-//                // Respond to onFinish callback
-//                // Clean up any resources if needed
-//            }
-//        }
-//
-//        val printJob = printManager.print(
-//            "Generate Receipt",
-//            printAdapter,
-//            PrintAttributes.Builder()
-//                .setMediaSize(PrintAttributes.MediaSize.ISO_A4)
-//                .setColorMode(PrintAttributes.COLOR_MODE_MONOCHROME)
-//                .setMinMargins(PrintAttributes.Margins.NO_MARGINS)
-//                .build()
-//        )
-//
-//        if (printJob.isCompleted) {
-//            // Handle completion
-//        }
-//
-//    }
+    fun addPin(pinNumber:String, onSuccess: () -> Unit){
+
+        val userId = auth.currentUser?.uid
+        val update = mapOf("pin" to pinNumber)
+        db.collection(Constants.COLLECTION_NAME_USERS)
+            .document(userId.toString()).update(update)
+            .addOnSuccessListener {
+                getUserData(userId.toString())
+                onSuccess.invoke()
+                popupNotification.value = Event("Pin Updated Successfully")
+
+            }
+            .addOnFailureListener {exc->
+                handleException(exc)
+            }
+    }
+
+    fun deletePin(onSuccess: () -> Unit){
+
+        val userId = auth.currentUser?.uid
+        val update = mapOf("pin" to "")
+        db.collection(Constants.COLLECTION_NAME_USERS)
+            .document(userId.toString()).update(update)
+            .addOnSuccessListener {
+                getUserData(userId.toString())
+                onSuccess.invoke()
+                popupNotification.value = Event("Pin Removed Successfully")
+            }
+            .addOnFailureListener {exc->
+                handleException(exc)
+            }
+
+    }
+
+    fun changePin(newPin:String, onSuccess: () -> Unit){
+
+        val userId = auth.currentUser?.uid
+        val update = mapOf("pin" to newPin)
+        db.collection(Constants.COLLECTION_NAME_USERS)
+            .document(userId.toString()).update(update)
+            .addOnSuccessListener {
+                getUserData(userId.toString())
+                onSuccess.invoke()
+                popupNotification.value = Event("Pin Changed Successfully")
+            }
+            .addOnFailureListener {exc->
+                handleException(exc)
+            }
+
+    }
+
+    fun print(businessName: String, businessDescription: String, businessAddress: String, businessNumber: String, customerName: String, invoiceType:String,
+              invoiceNumber:String, invoiceDate:String, totalQuantity: String, totalAmount: String, salesList:List<SingleSale>,sale: Sales){
+//        initListenersEvent.postValue(Unit)
+//        (context as? MainActivity)?.printDetails(userData.value?.businessName.toString(),userData.value?.businessDescription.toString(),userData.value?.businessAddress.toString(),userData.value?.number.toString()+userData.value?.additionalNumber.toString(),sale.customerName.toString(),
+//            sale.type.toString(), sale.salesNo.toString(), sale.salesDate.toString(), sale.totalQuantity.toString(), sale.totalPrice.toString(),salesList)
+    }
+
+    fun pay (){
+        _payTrigger.value = Unit
+    }
+
+
+    fun featuresToPassWord(TotalSales:String, TotalExpenses:String, TotalProfit:String,
+                           DailyReport:String, StockTotalValue:String, TotalAmountOwingCustomers:String,
+                           EditStock:String, EditCustomers:String, DeleteStocks:String, DeleteCustomers:String,
+                           EditSales:String, DeleteSale:String){
+
+        inProgressFeaturesToPin.value = true
+
+        val userId = auth.currentUser?.uid
+
+        val update = mapOf(
+            "totalSales" to TotalSales,
+            "totalExpenses" to TotalExpenses,
+            "totalProfit" to TotalProfit,
+            "dailyReport" to DailyReport,
+            "stockTotalValue" to StockTotalValue,
+            "totalAmountOwingCustomers" to TotalAmountOwingCustomers,
+            "editStocks" to EditStock,
+            "editCustomers" to EditCustomers,
+            "deleteStocks" to DeleteStocks,
+            "deleteCustomers" to DeleteCustomers,
+            "editSales" to EditSales,
+            "deleteSales" to DeleteSale
+        )
+
+        db.collection(Constants.COLLECTION_NAME_FEATURESTOPIN).document(userId.toString()).update(update)
+            .addOnSuccessListener {
+                inProgressFeaturesToPin.value = false
+                popupNotification.value = Event("Account Security Updated")
+                retrievePasswordFeatures()
+            }
+            .addOnFailureListener { exc->
+                inProgressFeaturesToPin.value = false
+                handleException(exc)
+            }
+    }
+    fun updateFeaturePassword(featureName: String, value: Boolean) {
+        inProgressFeaturesToPin.value = true
+
+        val userId = auth.currentUser?.uid
+
+        val update = mapOf(
+            featureName to value
+        )
+
+        db.collection(Constants.COLLECTION_NAME_FEATURESTOPIN)
+            .document(userId.toString())
+            .update(update)
+            .addOnSuccessListener {
+                inProgressFeaturesToPin.value = false
+                popupNotification.value = Event("$featureName Security Updated")
+                retrievePasswordFeatures()
+            }
+            .addOnFailureListener { exc ->
+                inProgressFeaturesToPin.value = false
+                handleException(exc)
+            }
+    }
+
+    fun retrievePasswordFeatures() {
+        inProgressFeaturesToPin.value = true
+        val userId = auth.currentUser?.uid
+        db.collection(Constants.COLLECTION_NAME_FEATURESTOPIN)
+            .document(userId.toString())
+            .get()
+            .addOnSuccessListener { document ->
+                val features = document.toObject(FeaturesToPin::class.java)
+                if (features != null) {
+                    featuresToPin.value = features
+                }
+                inProgressFeaturesToPin.value = false
+            }
+            .addOnFailureListener { exc ->
+                handleException(exc)
+                inProgressFeaturesToPin.value = false
+            }
+    }
 
 
 

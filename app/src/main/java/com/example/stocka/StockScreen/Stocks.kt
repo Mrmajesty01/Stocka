@@ -14,6 +14,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cancel
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
@@ -38,7 +39,7 @@ import com.example.stocka.Navigation.Destination
 import com.example.stocka.Viemodel.AuthViewModel
 import com.example.stocka.main.CommonProgressSpinner
 import com.example.stocka.main.navigateTo
-
+import com.example.stocka.ui.theme.ListOfColors
 
 
 @OptIn(ExperimentalComposeUiApi::class)
@@ -66,9 +67,111 @@ fun StockScreen(navController: NavController,viewModel: AuthViewModel) {
         mutableStateOf(true)
     }
 
+    var expanded by remember { mutableStateOf(false) }
+    var filterAppliedMostSold by remember { mutableStateOf(false) }
+    var filterAppliedLeastSold by remember { mutableStateOf(false) }
+    var filterAppliedHighestQty by remember { mutableStateOf(false) }
+    var filterAppliedLowestQty by remember { mutableStateOf(false) }
+    var selectedItem by remember { mutableStateOf("") }
+
 
 
     Box(modifier = Modifier.fillMaxSize()) {
+
+        Box(
+            modifier = Modifier.wrapContentHeight(),
+            contentAlignment = Alignment.TopCenter // Aligning content to the top end
+        ) {
+
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+                modifier = Modifier.width(250.dp)
+            ) {
+                Column {
+                    Text(
+                        text = "Filter by:",
+                        modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 4.dp),
+                        fontWeight = FontWeight.Bold
+                    )
+                    DropdownMenuItem(onClick = {
+                        selectedItem = "Highest Quantity"
+                    }) {
+                        Text(
+                            "Highest Quantity",
+                            fontWeight = if (selectedItem == "Highest Quantity") FontWeight.Bold else null
+                        )
+                    }
+
+                    DropdownMenuItem(onClick = {
+                        selectedItem = "Lowest Quantity"
+                    }) {
+                        Text(
+                            "Lowest Quantity",
+                            fontWeight = if (selectedItem == "Lowest Quantity") FontWeight.Bold else null
+                        )
+                    }
+
+                    DropdownMenuItem(onClick = {
+                        selectedItem = "Most Sold"
+                    }) {
+                        Text(
+                            "Most Sold",
+                            fontWeight = if (selectedItem == "Most Sold") FontWeight.Bold else null
+                        )
+                    }
+
+                    DropdownMenuItem(onClick = {
+                        selectedItem = "Least Sold"
+                    }) {
+                        Text(
+                            "Least Sold",
+                            fontWeight = if (selectedItem == "Least Sold") FontWeight.Bold else null
+                        )
+                    }
+
+                    Divider()
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Button(
+                            onClick = {
+                                expanded = false
+                                selectedItem = ""
+                                viewModel.retrieveStocks()
+                            },
+                            modifier = Modifier.wrapContentHeight()
+                                .wrapContentWidth(),
+                            colors = ButtonDefaults.buttonColors(backgroundColor = ListOfColors.lightRed)
+                        ) {
+                            Text("Cancel")
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Button(
+                            onClick = {
+                                expanded = false
+                                if (selectedItem.isNotBlank()) {
+
+                                    when (selectedItem) {
+                                        "Most Sold" -> viewModel.filterStocksByMostSold()
+                                        "Least Sold" -> viewModel.filterStocksByLeastSold()
+                                        "Highest Quantity" -> viewModel.filterStocksByHighestQuantity()
+                                        "Lowest Quantity" -> viewModel.filterStocksByLowestQuantity()
+                                    }
+                                }
+                            },
+                            modifier = Modifier.wrapContentHeight()
+                                .wrapContentWidth(),
+                            colors = ButtonDefaults.buttonColors(backgroundColor = ListOfColors.orange)
+                        ) {
+                            Text("Apply")
+                        }
+                    }
+                }
+            }
+        }
 
         Column(
             modifier = Modifier.fillMaxSize()
@@ -96,13 +199,11 @@ fun StockScreen(navController: NavController,viewModel: AuthViewModel) {
                 )
             }
 
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(
-                        start = 20.dp,
-                        end = 20.dp
-                    )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.End
             ) {
 
                 TextField(
@@ -112,14 +213,13 @@ fun StockScreen(navController: NavController,viewModel: AuthViewModel) {
                         viewModel.stockSearchWhenTyping(searchValue)
                     },
                     label = {
-                           Text(text = "Search for a stock")
+                        Text(text = "Search for a stock")
                     },
                     modifier = Modifier
                         .padding(8.dp)
-                        .fillMaxWidth()
                         .border(1.dp, Color.LightGray, CircleShape)
                         .onFocusChanged { focusState: FocusState ->
-                                searching = focusState.isFocused
+                            searching = focusState.isFocused
                         },
                     shape = CircleShape,
                     keyboardOptions = KeyboardOptions(
@@ -137,7 +237,7 @@ fun StockScreen(navController: NavController,viewModel: AuthViewModel) {
                             isTextFieldActive = false
                         },
 
-                    ),
+                        ),
                     maxLines = 1,
                     singleLine = true,
                     colors = TextFieldDefaults.textFieldColors(
@@ -165,14 +265,34 @@ fun StockScreen(navController: NavController,viewModel: AuthViewModel) {
                             viewModel.stockSearch(searchValue)
                             focus.clearFocus()
                         }) {
-                            Icon(imageVector = Icons.Filled.Search , contentDescription = null )
+                            Icon(imageVector = Icons.Filled.Search, contentDescription = null)
                         }
                     },
                 )
 
 
+                IconButton(
+                    onClick = { expanded = true },
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(imageVector = Icons.Default.FilterList, contentDescription = "filterIcon")
+                }
+            }
+
+
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(
+                        start = 20.dp,
+                        end = 20.dp
+                    )
+            ) {
+
+
                 Spacer(modifier = Modifier.padding(5.dp))
-                TotalStockValue(totalStockValue)
+                TotalStockValue(totalStockValue, viewModel)
                 Spacer(modifier = Modifier.padding(5.dp))
 
                 Box(
@@ -181,7 +301,7 @@ fun StockScreen(navController: NavController,viewModel: AuthViewModel) {
                         .fillMaxWidth()
                 ) {
                     if (searchValue.isEmpty()) {
-                        if(stocks.isEmpty()) {
+                        if (stocks.isEmpty()) {
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -193,8 +313,7 @@ fun StockScreen(navController: NavController,viewModel: AuthViewModel) {
                                     text = "You have not added any stock yet"
                                 )
                             }
-                        }
-                        else {
+                        } else {
                             LazyColumn(
                                 modifier = Modifier
                                     .wrapContentHeight()
@@ -210,8 +329,7 @@ fun StockScreen(navController: NavController,viewModel: AuthViewModel) {
                                 }
                             }
                         }
-                    }
-                    else{
+                    } else {
                         LazyColumn(
                             modifier = Modifier
                                 .wrapContentHeight()
@@ -220,7 +338,7 @@ fun StockScreen(navController: NavController,viewModel: AuthViewModel) {
                             state = lazyListState
                         ) {
                             items(searchedStock) { stock ->
-                                StockItem(stock = stock){go->
+                                StockItem(stock = stock) { go ->
                                     navigateTo(navController, Destination.StockInfo)
                                     viewModel.getStock(go)
                                 }
@@ -230,11 +348,11 @@ fun StockScreen(navController: NavController,viewModel: AuthViewModel) {
                 }
 
             }
-            if(!searching || !isTextFieldActive) {
+            if (!searching || !isTextFieldActive) {
                 BottomNavMenu(selectedItem = BottomNavItem.Stocks, navController = navController)
             }
         }
-        if(searchStockLoading){
+        if (searchStockLoading) {
             CommonProgressSpinner()
         }
     }

@@ -9,4 +9,5 @@ object Constants {
     const val COLLECTION_NAME_EXPENSE = "expenses"
     const val COLLECTION_NAME_STOCKHISTORY = "stockHistory"
     const val COLLECTION_NAME_DAILYREPORT = "dailyReport"
+    const val COLLECTION_NAME_FEATURESTOPIN = "featuresToPin"
 }

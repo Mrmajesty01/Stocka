@@ -1,6 +1,7 @@
 package com.example.stocka.LoginScreen
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -16,12 +17,14 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Password
-import androidx.compose.material.icons.filled.RemoveRedEye
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -39,6 +42,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
@@ -71,6 +75,8 @@ fun LoginScreen(navController: NavHostController, vieModel:AuthViewModel) {
             var password by rememberSaveable {
                 mutableStateOf("")
             }
+
+            var isPasswordVisible by rememberSaveable { mutableStateOf(false) }
 
             Image(
                 painter = painterResource(id = R.drawable.stockaimg), contentDescription = "logo",
@@ -152,15 +158,33 @@ fun LoginScreen(navController: NavHostController, vieModel:AuthViewModel) {
                     )
                 },
                 trailingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.RemoveRedEye,
-                        contentDescription = "seePassword",
-                        tint = ListOfColors.black
-                    )
+                    IconButton(
+                        onClick = { isPasswordVisible = !isPasswordVisible }
+                    ) {
+                        Icon(
+                            imageVector = if (isPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                            contentDescription = if (isPasswordVisible) "HidePassword" else "ShowPassword",
+                            tint = ListOfColors.black
+                        )
+                    }
                 },
-                visualTransformation = PasswordVisualTransformation(),
+                visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 singleLine = true
 
+            )
+
+            Spacer(Modifier.padding(5.dp))
+
+            Text(
+                text = "Forgot Password?",
+                color = ListOfColors.orange,
+                fontSize = 15.sp,
+                modifier = Modifier
+                    .clickable {
+                        navigateTo(navController, Destination.ForgotPassword)
+                    }
+                    .align(Alignment.End)
+                    .padding(end = 55.dp)
             )
 
             Spacer(Modifier.padding(20.dp))
@@ -169,6 +193,8 @@ fun LoginScreen(navController: NavHostController, vieModel:AuthViewModel) {
                 onClick = {
                     focus.clearFocus(force=true)
                     vieModel.login(email,password){
+                        email = ""
+                        password = ""
                         navController.navigate(Destination.Home.routes)
                     }
 
@@ -190,24 +216,46 @@ fun LoginScreen(navController: NavHostController, vieModel:AuthViewModel) {
 
             Spacer(Modifier.padding(10.dp))
 
+            Text(
+                buildAnnotatedString {
+                    withStyle(style = SpanStyle(color = Color.DarkGray)) {
+                        append("Don't have an account?  ")
+                    }
+                    withStyle(style = SpanStyle(color = ListOfColors.orange, fontWeight = FontWeight.Bold)) {
+                        append("Sign Up")
+                    }
 
-            Button(
-                onClick = {
-                    navigateTo(navController, Destination.SignUp)
                 },
-                shape = RoundedCornerShape(10.dp),
+                color = Color.DarkGray,
+                fontSize = 15.sp,
                 modifier = Modifier
-                    .fillMaxWidth(0.75f)
-                    .height(50.dp),
-                colors = ButtonDefaults.buttonColors(Color.Transparent)
+                    .clickable {
+                        navigateTo(navController, Destination.SignUp)
+                    }
+                    .padding(vertical = 12.dp) // Adjust padding as needed
             )
-            {
-                Text(
-                    text = "Don't have an account ? Sign Up!!!",
-                    color = Color.DarkGray,
-                    fontSize = 12.sp
-                )
-            }
+
+
+
+
+
+//            Button(
+//                onClick = {
+//                    navigateTo(navController, Destination.SignUp)
+//                },
+//                shape = RoundedCornerShape(10.dp),
+//                modifier = Modifier
+//                    .fillMaxWidth(0.75f)
+//                    .height(50.dp),
+//                colors = ButtonDefaults.buttonColors(Color.Transparent)
+//            )
+//            {
+//                Text(
+//                    text = "Don't have an account ? Sign Up!!!",
+//                    color = Color.DarkGray,
+//                    fontSize = 12.sp
+//                )
+//            }
 
         }
 

@@ -1,4 +1,5 @@
 package com.example.stocka.RegistrationScreen
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -13,6 +14,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
 import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
@@ -20,7 +22,8 @@ import androidx.compose.material.icons.filled.AddBusiness
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Password
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.RemoveRedEye
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,6 +39,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
@@ -78,6 +82,8 @@ fun RegistrationScreen(navController: NavHostController, viewModel:AuthViewModel
             var confirmPassword by rememberSaveable {
                 mutableStateOf("")
             }
+            var isPasswordVisible by rememberSaveable { mutableStateOf(false) }
+            var isPasswordVisibleConfirm by rememberSaveable { mutableStateOf(false) }
 
             Text(
                 buildAnnotatedString {
@@ -192,16 +198,19 @@ fun RegistrationScreen(navController: NavHostController, viewModel:AuthViewModel
                     )
                 },
                 trailingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.RemoveRedEye,
-                        contentDescription = "seePassword",
-                        tint = ListOfColors.black
-                    )
+                    IconButton(
+                        onClick = { isPasswordVisible = !isPasswordVisible }
+                    ) {
+                        Icon(
+                            imageVector = if (isPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                            contentDescription = if (isPasswordVisible) "HidePassword" else "ShowPassword",
+                            tint = ListOfColors.black
+                        )
+                    }
                 },
+                visualTransformation = if (isPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                visualTransformation = PasswordVisualTransformation()
-
             )
 
 
@@ -222,16 +231,19 @@ fun RegistrationScreen(navController: NavHostController, viewModel:AuthViewModel
                     )
                 },
                 trailingIcon = {
-                    Icon(
-                        imageVector = Icons.Default.RemoveRedEye,
-                        contentDescription = "seePassword",
-                        tint = ListOfColors.black
-                    )
+                    IconButton(
+                        onClick = { isPasswordVisibleConfirm = !isPasswordVisibleConfirm }
+                    ) {
+                        Icon(
+                            imageVector = if (isPasswordVisibleConfirm) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                            contentDescription = if (isPasswordVisibleConfirm) "HidePassword" else "ShowPassword",
+                            tint = ListOfColors.black
+                        )
+                    }
                 },
+                visualTransformation = if (isPasswordVisibleConfirm) VisualTransformation.None else PasswordVisualTransformation(),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                visualTransformation = PasswordVisualTransformation()
-
             )
 
             Spacer(Modifier.padding(20.dp))
@@ -260,26 +272,46 @@ fun RegistrationScreen(navController: NavHostController, viewModel:AuthViewModel
 
             Spacer(Modifier.padding(10.dp))
 
+            Text(
+                buildAnnotatedString {
+                    withStyle(style = SpanStyle(color = Color.DarkGray)) {
+                        append("Already have an account? ")
+                    }
+                    withStyle(style = SpanStyle(color = ListOfColors.orange, fontWeight = FontWeight.Bold)) {
+                        append("Login")
+                    }
 
-            Button(
-                onClick = {
-                    navigateTo(navController,Destination.Login)
                 },
-                shape = RoundedCornerShape(10.dp),
+                fontSize = 15.sp,
+                color = Color.DarkGray,
+                textAlign = TextAlign.Center,
                 modifier = Modifier
-                    .fillMaxWidth(0.75f)
-                    .height(50.dp),
-                colors = ButtonDefaults.buttonColors(Color.Transparent)
+                    .clickable {
+                        navigateTo(navController, Destination.Login)
+                    }
+                    .padding(vertical = 12.dp) // Adjust padding as needed
             )
-            {
-                Text(
-                    text = "Already have an account ? Login!!!",
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 12.sp,
-                    color = Color.DarkGray,
-                    textAlign = TextAlign.Center
-                )
-            }
+
+
+//            Button(
+//                onClick = {
+//                    navigateTo(navController,Destination.Login)
+//                },
+//                shape = RoundedCornerShape(10.dp),
+//                modifier = Modifier
+//                    .fillMaxWidth(0.75f)
+//                    .height(50.dp),
+//                colors = ButtonDefaults.buttonColors(Color.Transparent)
+//            )
+//            {
+//                Text(
+//                    text = "Already have an account ? Login!!!",
+//                    fontWeight = FontWeight.ExtraBold,
+//                    fontSize = 12.sp,
+//                    color = Color.DarkGray,
+//                    textAlign = TextAlign.Center
+//                )
+//            }
 
         }
 

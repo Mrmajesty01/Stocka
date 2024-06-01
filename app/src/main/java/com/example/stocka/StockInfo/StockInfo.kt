@@ -39,15 +39,34 @@ fun StockInfoScreen(
     val isLoading = viewModel.getStockProgress.value
     val stock = viewModel.stockSelected.value
     val isLoadingDelete = viewModel.deleteStockProgress.value
-    val userData = viewModel.userData.value
+    val features = viewModel.featuresToPin.value
+
     var openDialog by rememberSaveable {
         mutableStateOf(false)
     }
     var openDialogEdit by rememberSaveable {
         mutableStateOf(false)
     }
+    var openDialogDelete by rememberSaveable {
+        mutableStateOf(false)
+    }
     var pin by remember { mutableStateOf(TextFieldValue()) }
     val context = LocalContext.current
+
+    val userData = viewModel.userData.value
+
+    var editStockHidden by remember {
+        mutableStateOf(true)
+    }
+
+    var deleteStockHidden by remember {
+        mutableStateOf(true)
+    }
+
+    LaunchedEffect(features){
+        editStockHidden = viewModel.featuresToPin.value.EditStocks
+        deleteStockHidden = viewModel.featuresToPin.value.DeleteStocks
+    }
 
     var stockPrice = stock?.stockSellingPrice?.toDoubleOrNull() ?: 0.0
 
@@ -81,6 +100,7 @@ fun StockInfoScreen(
             confirmButton = {
                 TextButton(onClick = {
                     if (pin.text.toInt() == userData?.pin?.toInt()) {
+                        editStockHidden = false
                         openDialogEdit = false
                         viewModel.getStock(stock!!)
                         navController.navigate(Destination.EditStock.routes)
@@ -131,6 +151,7 @@ fun StockInfoScreen(
                 TextButton(onClick = {
                     if (pin.text.toInt() == userData?.pin?.toInt()) {
                         openDialog = false
+                        deleteStockHidden = false
                         viewModel.deleteStock(stock!!.stockId.toString()) {
                             navController.navigate(Destination.Stocks.routes)
                         }
@@ -145,6 +166,39 @@ fun StockInfoScreen(
             dismissButton = {
                 TextButton(onClick = {
                     openDialog = false
+                }) {
+                    Text(text = "No")
+                }
+            },
+        )
+    }
+
+    if(openDialogDelete){
+        AlertDialog(
+            onDismissRequest = { openDialogDelete = false },
+
+            title = {
+                Text(text = "Delete Stock")
+            },
+
+            text = {
+                Text(text = "Are you sure you want to delete ${stock!!.stockName} from stocks ?")
+            },
+
+            confirmButton = {
+                TextButton(onClick = {
+                    openDialogDelete = false
+                    viewModel.deleteStock(stock!!.stockId.toString()){
+                        navController.navigate(Destination.Stocks.routes)
+                    }
+                }) {
+                    Text(text = "Yes")
+                }
+            },
+
+            dismissButton = {
+                TextButton(onClick = {
+                    openDialogDelete = false
                 }) {
                     Text(text = "No")
                 }
@@ -186,7 +240,7 @@ fun StockInfoScreen(
                         .align(Alignment.CenterStart)
                         .clickable {
                             if (!isLoading || !isLoadingDelete) {
-                                navController.navigate(Destination.Stocks.routes)
+                                navController.popBackStack()
                             }
                         },
                     tint = ListOfColors.black
@@ -327,7 +381,12 @@ fun StockInfoScreen(
                 Button(
                     onClick = {
                         if (!isLoading || !isLoadingDelete) {
-                            openDialogEdit = true
+                            if (editStockHidden) {
+                                openDialogEdit = true
+                            } else {
+                                viewModel.getStock(stock!!)
+                                navController.navigate(Destination.EditStock.routes)
+                            }
                         }
                     },
                     shape = RoundedCornerShape(10.dp),
@@ -352,7 +411,12 @@ fun StockInfoScreen(
             Button(
                 onClick = {
                     if (!isLoading || !isLoadingDelete) {
-                        openDialog = true
+                        if(deleteStockHidden) {
+                            openDialog = true
+                        }
+                        else{
+                            openDialogDelete = true
+                        }
                     }
                 },
                 shape = RoundedCornerShape(10.dp),

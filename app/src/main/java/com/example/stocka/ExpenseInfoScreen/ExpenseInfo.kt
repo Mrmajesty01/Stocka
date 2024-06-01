@@ -154,55 +154,14 @@ fun ExpenseInfoScreen(navController: NavController, viewModel:AuthViewModel) {
                     Text(
                         text = "Name of Expense",
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.align(Alignment.TopStart)
-                    )
-
-                    Text(
-                        text = "Expense Category",
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.align(Alignment.TopEnd)
+                        modifier = Modifier.align(Alignment.TopCenter)
                     )
 
                     Text(
                         text = expense?.expenseName.toString(),
-                        modifier = Modifier.align(Alignment.BottomStart)
+                        modifier = Modifier.align(Alignment.BottomCenter)
                     )
 
-                    Text(
-                        text = expense?.expenseCategory.toString(),
-                        modifier = Modifier.align(Alignment.BottomEnd)
-                    )
-                }
-
-                Spacer(modifier = Modifier.padding(5.dp))
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(45.dp)
-                ) {
-
-                    Text(
-                        text = "Expense Description",
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.align(Alignment.TopStart)
-                    )
-
-                    Text(
-                        text = "Expense Amount",
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.align(Alignment.TopEnd)
-                    )
-
-                    Text(
-                        text = expense?.expenseDescription.toString(),
-                        modifier = Modifier.align(Alignment.BottomStart)
-                    )
-
-                    Text(
-                        text = formattedExpenseAmount,
-                        modifier = Modifier.align(Alignment.BottomEnd)
-                    )
                 }
 
                 Spacer(modifier = Modifier.padding(5.dp))
@@ -216,14 +175,70 @@ fun ExpenseInfoScreen(navController: NavController, viewModel:AuthViewModel) {
                     Text(
                         text = "Expense Date",
                         fontWeight = FontWeight.Bold,
-                        modifier = Modifier.align(Alignment.TopCenter)
+                        modifier = Modifier.align(Alignment.TopStart)
+                    )
+
+                    Text(
+                        text = "Expense Category",
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.align(Alignment.TopEnd)
+                    )
+
+
+                    Text(
+                        text = expense?.expenseCategory.toString(),
+                        modifier = Modifier.align(Alignment.BottomEnd)
                     )
 
                     Text(
                         text = formattedDate,
+                        modifier = Modifier.align(Alignment.BottomStart)
+                    )
+                }
+
+
+                Spacer(modifier = Modifier.padding(5.dp))
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(45.dp)
+                ) {
+
+                    Text(
+                        text = "Expense Description",
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.align(Alignment.TopCenter)
+                    )
+
+                    Text(
+                        text = expense?.expenseDescription.toString(),
+                        modifier = Modifier.align(Alignment.BottomCenter)
+                    )
+
+                }
+
+                Spacer(modifier = Modifier.padding(5.dp))
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(45.dp)
+                ) {
+
+                    Text(
+                        text = "Expense Amount",
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.align(Alignment.TopCenter)
+                    )
+
+                    Text(
+                        text = formattedExpenseAmount,
                         modifier = Modifier.align(Alignment.BottomCenter)
                     )
                 }
+
+
 
                 Spacer(modifier = Modifier.padding(20.dp))
 

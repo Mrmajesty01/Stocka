@@ -5,12 +5,15 @@ import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBackIos
+import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -74,6 +77,7 @@ fun AddSalesScreen(navController:NavController,viewModel: AuthViewModel) {
         mutableStateOf<List<AddSale>>(emptyList())
     }
 
+    var isDropdownVisible by rememberSaveable { mutableStateOf(false) }
 
     var stockToUpdate by rememberSaveable {
         mutableStateOf<MutableList<Pair<Stock, Int>>>(mutableListOf())
@@ -119,14 +123,18 @@ fun AddSalesScreen(navController:NavController,viewModel: AuthViewModel) {
     }
 
     if (stockSelected != null && stocks.any {it.stockName == stockSelected.stockName}  && stocks.any {it.stockId == stockSelected.stockId}) {
-        productName = stockSelected.stockName.toString()
-        cost = stockSelected.stockSellingPrice.toString()
-        totalCost = AddSaleupdateTotalCost(cost.toFloat(),quantity.toInt())
+        productName = stockSelected.stockName
+        cost = stockSelected.stockSellingPrice
+        if (cost.isNotBlank()) {
+            totalCost = AddSaleupdateTotalCost(cost.toFloat(), quantity.toInt())
+        } else {
+            totalCost = ""
+        }
         editStockClickable = false
         exist = true
     }
 
-    if(stockSelected != null) {
+    if(stockSelected != null && !stocks.any {it.stockName == stockSelected!!.stockName}  && !stocks.any {it.stockId == stockSelected!!.stockId}) {
         productName = stockSelected.stockName
         cost = stockSelected.stockSellingPrice
         viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockPurchasePrice = cost)
@@ -234,6 +242,7 @@ fun AddSalesScreen(navController:NavController,viewModel: AuthViewModel) {
                             viewModel.stockSelected.value = Stock()
                             viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockName = it)
                             productName = it
+                            isDropdownVisible = it.isNotEmpty()
                         },
                         label = {
                             Text(
@@ -265,6 +274,53 @@ fun AddSalesScreen(navController:NavController,viewModel: AuthViewModel) {
                                 }
                             }
                     )
+
+                    if(!editStockClickable) {
+                        Icon(
+                            imageVector = Icons.Default.Cancel,
+                            contentDescription = "cancelIcon",
+                            modifier = Modifier
+                                .align(Alignment.CenterStart)
+                                .clickable {
+                                    viewModel.stockSelected.value = null
+                                    productName = ""
+                                    cost = ""
+                                    totalCost = ""
+                                    editStockClickable = true
+                                }
+                        )
+                    }
+                }
+
+                if (isDropdownVisible && stocks.isNotEmpty() && viewModel.stockSelected.value?.stockName?.isNotEmpty() == true) {
+
+                    LazyColumn(
+                        modifier = Modifier
+                            .background(Color.White)
+                            .wrapContentWidth(Alignment.CenterHorizontally),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        items(
+                            items = stocks.filter {
+                                it.stockName.contains(viewModel.stockSelected.value!!.stockName, ignoreCase = true)
+                            }.take(3)
+                        ) { stock ->
+                            DropdownMenuItem(onClick = {
+                                // Handle item selection
+                                viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockName = stock.stockName)
+                                viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockId = stock.stockId)
+                                viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockPurchasePrice = stock.stockPurchasePrice)
+                                viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockSellingPrice = stock.stockSellingPrice)
+                                viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockFixedSellingPrice = stock.stockFixedSellingPrice)
+                                viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockTotalPrice = stock.stockTotalPrice)
+                                viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockQuantity = stock.stockQuantity)
+                                viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockQuantitySold = stock.stockQuantitySold)
+                                isDropdownVisible = false
+                            }) {
+                                Text(text = stock.stockName)
+                            }
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.padding(10.dp))
@@ -311,11 +367,19 @@ fun AddSalesScreen(navController:NavController,viewModel: AuthViewModel) {
                         contentDescription = "removeIcon",
                         modifier = Modifier.clickable {
                             if (!isLoading || !isLoadingStock) {
-                                if (quantity.toInt() > 0) {
-                                    var temp = quantity.toInt()
-                                    temp--
-                                    quantity = temp.toString()
-                                    viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockTotalPrice = AddSaleupdateTotalCost(viewModel.stockSelected.value!!.stockSellingPrice!!.toFloat(), quantity.toInt()))
+                                if (quantity.isNotEmpty() && quantity.toInt() > 0) {
+                                    if (viewModel.stockSelected.value != null && quantity.isNotEmpty()) {
+                                        var temp = quantity.toInt()
+                                        temp--
+                                        quantity = temp.toString()
+                                        viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockTotalPrice = AddSaleupdateTotalCost(viewModel.stockSelected.value!!.stockSellingPrice!!.toFloat(), quantity.toInt()))
+                                    }
+                                    else{
+                                        Toast.makeText(context,"Select a stock to decrease quantity",Toast.LENGTH_LONG).show()
+                                    }
+                                }
+                                else{
+                                    Toast.makeText(context,"Add quantity to make sale",Toast.LENGTH_LONG).show()
                                 }
                             }
                         }
@@ -329,12 +393,12 @@ fun AddSalesScreen(navController:NavController,viewModel: AuthViewModel) {
                         onValueChange = {
                             if (it.isNotEmpty()) {
                                 val newValue = it.toInt()
-                                quantity = if (newValue >= 0) newValue.toString() else "1"
+                                quantity = if (newValue >= 0) newValue.toString() else ""
                                 viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockSellingPrice = (AddSaleupdateTotalCost(viewModel.stockSelected.value!!.stockSellingPrice!!.toFloat(), quantity.toInt())))
 //
                             } else {
-                                quantity = "1"
-                                viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockSellingPrice = (AddSaleupdateTotalCost(viewModel.stockSelected.value!!.stockSellingPrice!!.toFloat(), 1)))
+                                quantity = ""
+                                viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockSellingPrice = (AddSaleupdateTotalCost(viewModel.stockSelected.value!!.stockSellingPrice!!.toFloat(), 0)))
 //
                             }
                         },
@@ -353,10 +417,20 @@ fun AddSalesScreen(navController:NavController,viewModel: AuthViewModel) {
                         contentDescription = "addIcon",
                         modifier = Modifier.clickable {
                             if (!isLoading && !isLoadingStock) {
-                                var temp = quantity.toInt()
-                                temp++
-                                quantity = temp.toString()
-                                viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockTotalPrice = AddSaleupdateTotalCost(viewModel.stockSelected.value!!.stockSellingPrice!!.toFloat(), quantity.toInt()))
+                                if (quantity.isNotEmpty() && quantity.toInt() >= 0) {
+                                    if (viewModel.stockSelected.value != null && quantity.isNotEmpty()) {
+                                        var temp = quantity.toInt()
+                                        temp++
+                                        quantity = temp.toString()
+                                        viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockTotalPrice = AddSaleupdateTotalCost(viewModel.stockSelected.value!!.stockSellingPrice!!.toFloat(), quantity.toInt()))
+                                    }
+                                    else {
+                                        Toast.makeText(context, "Select a stock to increase quantity", Toast.LENGTH_LONG).show()
+                                    }
+                                }
+                                else{
+                                    Toast.makeText(context, "Add quantity to make sale", Toast.LENGTH_LONG).show()
+                                }
                             }
                         }
                     )
@@ -389,6 +463,16 @@ fun AddSalesScreen(navController:NavController,viewModel: AuthViewModel) {
                         focus.clearFocus(force = true)
 
                         if(!isLoading || !isLoadingStock) {
+
+                            if (quantity.isEmpty() || quantity.toInt() == 0) {
+                                // Show a toast message indicating that the count is not an integer
+                                Toast.makeText(
+                                    context,
+                                    "stock quantity can't be zero or null",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                                return@Button
+                            }
 
                             if (!quantity.isInt()) {
                                 // Show a toast message indicating that the count is not an integer
@@ -424,8 +508,8 @@ fun AddSalesScreen(navController:NavController,viewModel: AuthViewModel) {
                                 }
 
 
-                                var profit = cost.toDouble()
-                                    ?.minus(stockSelected?.stockPurchasePrice?.toDouble()!!)
+                                val profit = cost.toDouble()
+                                    .minus(stockSelected?.stockPurchasePrice?.toDouble()!!)
 
                                 val sale =
                                     SingleSale(

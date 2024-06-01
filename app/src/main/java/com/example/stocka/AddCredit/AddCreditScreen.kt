@@ -14,12 +14,16 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Divider
+import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.Icon
 import androidx.compose.material.LocalTextStyle
 import androidx.compose.material.OutlinedTextField
@@ -27,6 +31,7 @@ import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBackIos
+import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -44,6 +49,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.stocka.HomeScreen.formatNumberWithDelimiter
 import com.example.stocka.MakeCreditScreen.MakeSale
 import com.example.stocka.Navigation.Destination
 import com.example.stocka.Viemodel.AuthViewModel
@@ -90,6 +96,8 @@ fun AddCreditScreen(navController: NavController, viewModel: AuthViewModel){
         mutableStateOf<MutableList<Pair<Stock, Int>>>(mutableListOf())
     }
 
+    var isDropdownVisible by rememberSaveable { mutableStateOf(false) }
+
     var editStockClickable by rememberSaveable {
         mutableStateOf(true)
     }
@@ -113,15 +121,17 @@ fun AddCreditScreen(navController: NavController, viewModel: AuthViewModel){
     var quantity by rememberSaveable {
         mutableStateOf("1")
     }
+
+
     if (stockSelected != null && stocks.any {it.stockName == stockSelected.stockName}  && stocks.any {it.stockId == stockSelected.stockId}) {
-        productName = stockSelected.stockName.toString()
-        productCost = stockSelected.stockSellingPrice.toString()
-        totalCost = stockSelected.stockTotalPrice.toString()
+        productName = stockSelected.stockName
+        productCost = stockSelected.stockSellingPrice
+        totalCost = stockSelected.stockTotalPrice
         editStockClickable = false
         exist = true
     }
 
-    if(stockSelected != null) {
+    if(stockSelected != null && !stocks.any {it.stockName == stockSelected!!.stockName}  && !stocks.any {it.stockId == stockSelected!!.stockId}) {
         productName = stockSelected.stockName
         productCost = stockSelected.stockSellingPrice
         viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockPurchasePrice = productCost)
@@ -131,6 +141,9 @@ fun AddCreditScreen(navController: NavController, viewModel: AuthViewModel){
         totalCost = stockSelected.stockTotalPrice
         exist = false
     }
+
+    var customerBalance = customer?.customerBalance!!.toDoubleOrNull() ?: 0.0
+    var formattedCustomerBalance = formatNumberWithDelimiter(customerBalance!!)
 
     Box(modifier = Modifier.fillMaxSize()) {
 
@@ -209,7 +222,7 @@ fun AddCreditScreen(navController: NavController, viewModel: AuthViewModel){
                         modifier = Modifier.align(Alignment.BottomStart)
                     )
                     Text(
-                        text = customer?.customerBalance.toString(),
+                        text = formattedCustomerBalance,
                         modifier = Modifier.align(Alignment.BottomEnd)
                     )
                 }
@@ -228,6 +241,7 @@ fun AddCreditScreen(navController: NavController, viewModel: AuthViewModel){
                             viewModel.stockSelected.value = Stock()
                             viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockName = it)
                             productName = it
+                            isDropdownVisible = it.isNotEmpty()
                         },
                         label = {
                             Text(
@@ -258,6 +272,53 @@ fun AddCreditScreen(navController: NavController, viewModel: AuthViewModel){
                                 }
                             }
                     )
+
+                    if(!editStockClickable) {
+                        Icon(
+                            imageVector = Icons.Default.Cancel,
+                            contentDescription = "cancelIcon",
+                            modifier = Modifier
+                                .align(Alignment.CenterStart)
+                                .clickable {
+                                    viewModel.stockSelected.value = null
+                                    productName = ""
+                                    productCost = ""
+                                    totalCost = ""
+                                    editStockClickable = true
+                                }
+                        )
+                    }
+                }
+
+                if (isDropdownVisible && stocks.isNotEmpty() && viewModel.stockSelected.value?.stockName?.isNotEmpty() == true) {
+
+                    LazyColumn(
+                        modifier = Modifier
+                            .background(Color.White)
+                            .wrapContentWidth(Alignment.CenterHorizontally),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        items(
+                            items = stocks.filter {
+                                it.stockName.contains(viewModel.stockSelected.value!!.stockName, ignoreCase = true)
+                            }.take(3)
+                        ) { stock ->
+                            DropdownMenuItem(onClick = {
+                                // Handle item selection
+                                viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockName = stock.stockName)
+                                viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockId = stock.stockId)
+                                viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockPurchasePrice = stock.stockPurchasePrice)
+                                viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockSellingPrice = stock.stockSellingPrice)
+                                viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockFixedSellingPrice = stock.stockFixedSellingPrice)
+                                viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockTotalPrice = stock.stockTotalPrice)
+                                viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockQuantity = stock.stockQuantity)
+                                viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockQuantitySold = stock.stockQuantitySold)
+                                isDropdownVisible = false
+                            }) {
+                                Text(text = stock.stockName)
+                            }
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.padding(10.dp))
@@ -302,10 +363,19 @@ fun AddCreditScreen(navController: NavController, viewModel: AuthViewModel){
                         contentDescription = "removeIcon",
                         modifier = Modifier.clickable {
                             if (!isLoading || !isLoadingStock) {
-                                if (quantity.toInt() > 0) {
-                                    var temp = quantity.toInt()
-                                    temp--
-                                    quantity = temp.toString();
+                                if (quantity.isNotEmpty() && quantity.toInt() > 0) {
+                                    if (viewModel.stockSelected.value != null && quantity.isNotEmpty()) {
+                                        var temp = quantity.toInt()
+                                        temp--
+                                        quantity = temp.toString()
+                                        viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockTotalPrice = updateTotalCost(viewModel.stockSelected.value!!.stockSellingPrice!!.toFloat(), quantity.toInt()))
+                                    }
+                                    else{
+                                        Toast.makeText(context,"Select a stock to decrease quantity",Toast.LENGTH_LONG).show()
+                                    }
+                                }
+                                else{
+                                    Toast.makeText(context,"Add quantity to make sale",Toast.LENGTH_LONG).show()
                                 }
                             }
                         }
@@ -314,20 +384,25 @@ fun AddCreditScreen(navController: NavController, viewModel: AuthViewModel){
                     OutlinedTextField(
                         modifier = Modifier
                             .width(100.dp)
-                            .height(50.dp),
+                            .height(70.dp),
                         value = quantity,
                         onValueChange = {
                             if (it.isNotEmpty()) {
                                 val newValue = it.toInt()
-                                quantity = if (newValue >= 0) newValue.toString() else "1"
+                                quantity = if (newValue >= 0) newValue.toString() else ""
                                 viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockSellingPrice = (updateTotalCost(viewModel.stockSelected.value!!.stockSellingPrice!!.toFloat(), quantity.toInt())))
                             } else {
-                                quantity = "1"
-                                viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockSellingPrice = (updateTotalCost(viewModel.stockSelected.value!!.stockSellingPrice!!.toFloat(), 1)))
+                                quantity = ""
+                                viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockSellingPrice = (updateTotalCost(viewModel.stockSelected.value!!.stockSellingPrice!!.toFloat(), 0)))
 
                             }
                         },
                         textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center),
+                        label = {
+                            Text(
+                                text = " Quantity"
+                            )
+                        },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         enabled = !isLoading || !isLoadingStock
                     )
@@ -337,9 +412,20 @@ fun AddCreditScreen(navController: NavController, viewModel: AuthViewModel){
                         contentDescription = "addIcon",
                         modifier = Modifier.clickable {
                             if(!isLoading || !isLoadingStock) {
-                                var temp = quantity.toInt()
-                                temp++
-                                quantity = temp.toString()
+                                if (quantity.isNotEmpty() && quantity.toInt() >= 0) {
+                                    if (viewModel.stockSelected.value != null && quantity.isNotEmpty()) {
+                                        var temp = quantity.toInt()
+                                        temp++
+                                        quantity = temp.toString()
+                                        viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockTotalPrice = updateTotalCost(viewModel.stockSelected.value!!.stockSellingPrice!!.toFloat(), quantity.toInt()))
+                                    }
+                                    else {
+                                        Toast.makeText(context, "Select a stock to increase quantity", Toast.LENGTH_LONG).show()
+                                    }
+                                }
+                                else{
+                                    Toast.makeText(context, "Add quantity to make sale", Toast.LENGTH_LONG).show()
+                                }
                             }
                         }
                     )
@@ -374,6 +460,16 @@ fun AddCreditScreen(navController: NavController, viewModel: AuthViewModel){
                         if(!isLoading || !isLoadingStock) {
 
 
+                            if (quantity.isEmpty() || quantity.toInt() == 0) {
+                                // Show a toast message indicating that the count is not an integer
+                                Toast.makeText(
+                                    context,
+                                    "stock quantity can't be zero or null",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                                return@Button
+                            }
+
                             if (!quantity.isInt()) {
                                 // Show a toast message indicating that the count is not an integer
                                 Toast.makeText(
@@ -407,8 +503,8 @@ fun AddCreditScreen(navController: NavController, viewModel: AuthViewModel){
                                 }
 
 
-                                var profit = productCost.toDouble()
-                                    ?.minus(stockSelected?.stockPurchasePrice?.toDouble()!!)
+                                val profit = productCost.toDouble()
+                                    .minus(stockSelected?.stockPurchasePrice?.toDouble()!!)
 
 
                                 val sale =

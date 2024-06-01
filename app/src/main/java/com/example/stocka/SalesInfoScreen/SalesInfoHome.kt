@@ -8,22 +8,24 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.AlertDialog
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.CircularProgressIndicator
 import androidx.compose.material.Divider
 import androidx.compose.material.Icon
+import androidx.compose.material.OutlinedTextField
 import androidx.compose.material.Text
 import androidx.compose.material.TextButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIos
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -32,6 +34,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -66,9 +70,26 @@ fun SalesInfoHome(navController: NavController,viewModel:AuthViewModel) {
     } ?: ""
 
 
+    val features = viewModel.featuresToPin.value
 
-    if(sale?.sales.isNullOrEmpty()){
-        navigateTo(navController,Destination.Home)
+    var editSalesHidden by remember {
+        mutableStateOf(true)
+    }
+
+    var deleteSalesHidden by remember {
+        mutableStateOf(true)
+    }
+
+    var pin by remember { mutableStateOf(TextFieldValue()) }
+    val userData = viewModel.userData.value
+
+    LaunchedEffect(features) {
+        editSalesHidden = viewModel.featuresToPin.value.EditSales
+        deleteSalesHidden = viewModel.featuresToPin.value.DeleteSales
+    }
+
+    if (sale?.sales.isNullOrEmpty()) {
+        navigateTo(navController, Destination.Home)
     }
 
     var totalAmount = sale?.totalPrice?.toDoubleOrNull() ?: 0.0
@@ -79,7 +100,11 @@ fun SalesInfoHome(navController: NavController,viewModel:AuthViewModel) {
         mutableStateOf(false)
     }
 
-    if(openDialog){
+    var openDialogDelete by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    if (openDialog) {
         AlertDialog(
             onDismissRequest = { openDialog = false },
 
@@ -88,17 +113,33 @@ fun SalesInfoHome(navController: NavController,viewModel:AuthViewModel) {
             },
 
             text = {
-                Text(text = "Are you sure you want to delete sale ?")
-            },
+                Column {
+                    Spacer(modifier = Modifier.height(16.dp))
 
+                    // Add an EditText for PIN input
+                    OutlinedTextField(
+                        value = pin,
+                        onValueChange = {
+                            pin = it
+                        },
+                        label = { Text("Enter PIN To Delete Sale") },
+                        keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.NumberPassword),
+                    )
+                }
+            },
             confirmButton = {
                 TextButton(onClick = {
-                    openDialog = false
-                    viewModel.deleteEntireDocument(
-                        customerId = sale?.customerId.toString(),
-                        salesId = sale?.salesId.toString()
-                    ) {
-                        navigateTo(navController, Destination.Home)
+                    if (pin.text.toInt() == userData?.pin?.toInt()) {
+                        openDialog = false
+                        deleteSalesHidden = false
+                        viewModel.deleteEntireDocument(
+                            customerId = sale?.customerId.toString(),
+                            salesId = sale?.salesId.toString()
+                        ) {
+                            navigateTo(navController, Destination.Home)
+                        }
+                    } else {
+                        Toast.makeText(context, "wrong pin try again", Toast.LENGTH_LONG).show()
                     }
                 }) {
                     Text(text = "Yes")
@@ -115,6 +156,42 @@ fun SalesInfoHome(navController: NavController,viewModel:AuthViewModel) {
         )
     }
 
+    if (openDialogDelete) {
+        AlertDialog(
+            onDismissRequest = { openDialogDelete = false },
+
+            title = {
+                Text(text = "Delete Sale")
+            },
+
+            text = {
+                Text(text = "Are you sure you want to delete sale ?")
+            },
+
+            confirmButton = {
+                TextButton(onClick = {
+                    openDialogDelete = false
+                    viewModel.deleteEntireDocument(
+                        customerId = sale?.customerId.toString(),
+                        salesId = sale?.salesId.toString()
+                    ) {
+                        navigateTo(navController, Destination.Home)
+                    }
+                }) {
+                    Text(text = "Yes")
+                }
+            },
+
+            dismissButton = {
+                TextButton(onClick = {
+                    openDialogDelete = false
+                }) {
+                    Text(text = "No")
+                }
+            },
+        )
+    }
+
 
     sale?.userId.let {
 
@@ -124,7 +201,7 @@ fun SalesInfoHome(navController: NavController,viewModel:AuthViewModel) {
 
         ) {
 
-            if (isLoading || isLoadingCustomer ||isLoadingDelete) {
+            if (isLoading || isLoadingCustomer || isLoadingDelete) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -135,7 +212,8 @@ fun SalesInfoHome(navController: NavController,viewModel:AuthViewModel) {
 
             Column(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp)
             ) {
 
                 Row(
@@ -173,113 +251,109 @@ fun SalesInfoHome(navController: NavController,viewModel:AuthViewModel) {
 
                 Spacer(modifier = Modifier.padding(15.dp))
 
-                Column(
-                    modifier = Modifier.fillMaxSize()
+
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(75.dp)
+                        .padding(start = 3.dp, end = 3.dp)
                 ) {
 
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(75.dp)
-                            .padding(start = 3.dp, end = 3.dp)
-                    ) {
+
+                    Text(
+                        text = "Customer Name",
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.align(Alignment.TopStart)
+                    )
+
+                    Text(
+                        text = sale?.customerName.toString(),
+                        modifier = Modifier.align(Alignment.TopEnd)
+                    )
 
 
-                        Text(
-                            text = "Customer Name",
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.align(Alignment.TopStart)
-                        )
+                    Text(
+                        text = "Invoice Number",
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.align(Alignment.CenterStart)
+                    )
 
-                        Text(
-                            text = sale?.customerName.toString(),
-                            modifier = Modifier.align(Alignment.TopEnd)
-                        )
+                    Text(
+                        text = sale?.salesNo.toString(),
+                        modifier = Modifier.align(Alignment.CenterEnd)
+                    )
 
+                    Text(
+                        text = "Date",
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.align(Alignment.BottomStart)
+                    )
 
-                        Text(
-                            text = "Invoice Number",
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.align(Alignment.CenterStart)
-                        )
+                    Text(
+                        text = formattedDate,
+                        modifier = Modifier.align(Alignment.BottomEnd)
+                    )
 
-                        Text(
-                            text = sale?.salesNo.toString(),
-                            modifier = Modifier.align(Alignment.CenterEnd)
-                        )
+                }
 
-                        Text(
-                            text = "Date",
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.align(Alignment.BottomStart)
-                        )
+                Spacer(modifier = Modifier.padding(20.dp))
 
-                        Text(
-                            text = formattedDate,
-                            modifier = Modifier.align(Alignment.BottomEnd)
-                        )
-
-                    }
-
-                    Spacer(modifier = Modifier.padding(20.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
 
 
-                        Text(
-                            text = "Quantity",
-                            fontWeight = FontWeight.Bold
-                        )
+                    Text(
+                        text = "Quantity",
+                        fontWeight = FontWeight.Bold
+                    )
 
-                        Text(
-                            text = "Item",
-                            fontWeight = FontWeight.Bold
-                        )
+                    Text(
+                        text = "Item",
+                        fontWeight = FontWeight.Bold
+                    )
 
-                        Text(
-                            text = "Unit Price",
-                            fontWeight = FontWeight.Bold
-                        )
+                    Text(
+                        text = "Unit Price",
+                        fontWeight = FontWeight.Bold
+                    )
 
-                        Text(
-                            text = "Total",
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-
-
-                    Spacer(modifier = Modifier.padding(5.dp))
+                    Text(
+                        text = "Total",
+                        fontWeight = FontWeight.Bold
+                    )
+                }
 
 
-                    LazyColumn(
-                        modifier = Modifier
-                            .background(if (isLoading || isLoadingCustomer || isLoadingDelete) ListOfColors.lightGrey else Color.Transparent),
-                        verticalArrangement = Arrangement.spacedBy(7.dp),
-                    ) {
-                        items(sale?.sales.orEmpty()) { singleSale ->
-                            SalesItemsDetails(sales = singleSale, viewModel) {
-                                if (!isLoading || !isLoadingCustomer || !isLoadingDelete) {
-                                    if (sale != null) {
-                                        viewModel.onSaleSelected(sale)
-                                        viewModel.fromPage("saleInfoHome")
-                                        viewModel.getStockSelected(singleSale)
-                                        viewModel.getSingleSale(singleSale, sale)
-                                    }
-                                    navController.navigate(Destination.EditSales.routes)
+                Spacer(modifier = Modifier.padding(5.dp))
+
+
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .wrapContentHeight()
+                        .background(if (isLoading || isLoadingCustomer || isLoadingDelete) ListOfColors.lightGrey else Color.Transparent),
+                    verticalArrangement = Arrangement.spacedBy(7.dp),
+                ) {
+                    items(sale?.sales.orEmpty()) { singleSale ->
+                        SalesItemsDetails(sales = singleSale, viewModel) {
+                            if (!isLoading || !isLoadingCustomer || !isLoadingDelete) {
+                                if (sale != null) {
+                                    viewModel.onSaleSelected(sale)
+                                    viewModel.fromPage("saleInfoHome")
+                                    viewModel.getStockSelected(singleSale)
+                                    viewModel.getSingleSale(singleSale, sale)
                                 }
+                                navController.navigate(Destination.EditSales.routes)
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.padding(10.dp))
+                    item {
 
-                    Column(
-                        modifier = Modifier
-                            .verticalScroll(rememberScrollState()),
-                    ) {
+                        Spacer(modifier = Modifier.padding(10.dp))
 
                         Box(
                             modifier = Modifier
@@ -314,92 +388,105 @@ fun SalesInfoHome(navController: NavController,viewModel:AuthViewModel) {
 
                         Spacer(modifier = Modifier.padding(20.dp))
 
-                        Row(
-                            Modifier
-                                .align(Alignment.CenterHorizontally),
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.Center
+                        ) {
+
+                            Row(
+                                Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Button(
+                                    onClick = {
+                                        if (!isLoading || !isLoadingCustomer || !isLoadingDelete) {
+                                            if (sale?.sales.isNullOrEmpty() || (sale?.sales?.size
+                                                    ?: 0) < 15
+                                            ) {
+                                                viewModel.onSaleSelected(sale!!)
+                                                viewModel.fromPage("home")
+                                                navigateTo(navController, Destination.AddSale)
+                                            } else {
+                                                Toast.makeText(
+                                                    context,
+                                                    "Limit exceeded for adding sale",
+                                                    Toast.LENGTH_LONG
+                                                ).show()
+                                            }
+                                        }
+                                    },
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.buttonColors(ListOfColors.orange),
+                                    modifier = Modifier
+                                        .width(120.dp)
+                                        .height(50.dp)
+                                ) {
+                                    Text(
+
+                                        text = "Add Goods",
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+
+                                Spacer(modifier = Modifier.width(20.dp))
+
+                                Button(
+                                    onClick = {
+                                        if (!isLoading || !isLoadingCustomer || !isLoadingDelete) {
+                                            viewModel.onSaleSelected(sale!!)
+                                            navController.navigate(Destination.SalesReceipt.routes)
+                                        }
+                                    },
+                                    shape = RoundedCornerShape(10.dp),
+                                    colors = ButtonDefaults.buttonColors(ListOfColors.orange),
+                                    modifier = Modifier
+                                        .width(120.dp)
+                                        .height(50.dp),
+                                ) {
+                                    Text(
+                                        text = "Generate Receipt",
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.padding(10.dp))
+
+                        Box(
+                            modifier = Modifier.fillMaxWidth(),
+                            contentAlignment = Alignment.Center
                         ) {
                             Button(
                                 onClick = {
                                     if (!isLoading || !isLoadingCustomer || !isLoadingDelete) {
-                                        if (sale?.sales.isNullOrEmpty() || (sale?.sales?.size
-                                                ?: 0) < 15
-                                        ) {
-                                            viewModel.onSaleSelected(sale!!)
-                                            viewModel.fromPage("home")
-                                            navigateTo(navController, Destination.AddSale)
+                                        if (deleteSalesHidden) {
+                                            openDialog = true
                                         } else {
-                                            Toast.makeText(
-                                                context,
-                                                "Limit exceeded for adding sale",
-                                                Toast.LENGTH_LONG
-                                            ).show()
+                                            openDialogDelete = true
                                         }
                                     }
                                 },
                                 shape = RoundedCornerShape(10.dp),
-                                colors = ButtonDefaults.buttonColors(ListOfColors.orange),
                                 modifier = Modifier
-                                    .width(120.dp)
-                                    .height(50.dp)
+                                    .fillMaxWidth(0.7f)
+                                    .height(50.dp),
+                                colors = ButtonDefaults.buttonColors(ListOfColors.orange)
                             ) {
-                                Text(
 
-                                    text = "Add Goods",
-                                    textAlign = TextAlign.Center
+                                Text(
+                                    text = "Delete ",
+                                    color = ListOfColors.black
                                 )
                             }
-
-                            Spacer(modifier = Modifier.width(20.dp))
-
-                            Button(
-                                onClick = {
-                                    if (!isLoading || !isLoadingCustomer || !isLoadingDelete) {
-                                        viewModel.onSaleSelected(sale!!)
-                                        navController.navigate(Destination.SalesReceipt.routes)
-                                    }
-                                },
-                                shape = RoundedCornerShape(10.dp),
-                                colors = ButtonDefaults.buttonColors(ListOfColors.orange),
-                                modifier = Modifier
-                                    .width(120.dp)
-                                    .height(50.dp)
-                            ) {
-                                Text(
-                                    text = "Generate Receipt",
-                                    textAlign = TextAlign.Center
-                                )
-                            }
-                        }
-
-
-                        Spacer(modifier = Modifier.padding(10.dp))
-
-                        Button(
-                            onClick = {
-                                if (!isLoading || !isLoadingCustomer || !isLoadingDelete) {
-                                    focus.clearFocus(force = true)
-                                    openDialog = true
-                                }
-                            },
-                            shape = RoundedCornerShape(10.dp),
-                            modifier = Modifier
-                                .fillMaxWidth(0.7f)
-                                .height(50.dp)
-                                .align(Alignment.CenterHorizontally),
-                            colors = ButtonDefaults.buttonColors(ListOfColors.orange)
-                        ) {
-
-                            Text(
-                                text = "Delete ",
-                                color = ListOfColors.black
-                            )
                         }
                     }
                 }
 
+
             }
 
-            if(isLoading || isLoadingCustomer || isLoadingDelete){
+            if (isLoading || isLoadingCustomer || isLoadingDelete) {
                 CircularProgressIndicator(
                     modifier = Modifier
                         .size(50.dp)

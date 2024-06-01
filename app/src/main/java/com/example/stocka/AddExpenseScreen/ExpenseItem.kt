@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Card
 import androidx.compose.material.Text
@@ -12,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.stocka.HomeScreen.formatNumberWithDelimiter
 import com.example.stocka.data.Expense
@@ -58,7 +60,10 @@ fun ExpenseItem(
                 Text(
                     text = expense.expenseName.toString(),
                     fontWeight = FontWeight.Light,
+                    maxLines = 1,
                     modifier = Modifier.align(Alignment.BottomStart)
+                        .widthIn(max = 200.dp),
+                    overflow = TextOverflow.Ellipsis
                 )
 
                 Text(
@@ -111,7 +116,10 @@ fun ExpenseItem(
                 Text(
                     text = expense.expenseDescription.toString(),
                     fontWeight = FontWeight.Light,
+                    maxLines = 1,
                     modifier = Modifier.align(Alignment.BottomStart)
+                        .widthIn(max = 200.dp),
+                    overflow = TextOverflow.Ellipsis
                 )
 
                 Text(

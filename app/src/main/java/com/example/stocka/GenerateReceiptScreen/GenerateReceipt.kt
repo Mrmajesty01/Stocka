@@ -1,22 +1,11 @@
 package com.example.stocka.GenerateReceiptScreen
 
 import android.annotation.SuppressLint
-import android.content.Context
-import android.os.Bundle
-import android.os.CancellationSignal
-import android.os.ParcelFileDescriptor
-import android.print.PageRange
-import android.print.PrintAttributes
-import android.print.PrintDocumentAdapter
-import android.print.PrintManager
-import androidx.activity.ComponentActivity
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.Divider
@@ -33,15 +22,18 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.stocka.HomeScreen.formatNumberWithDelimiter
+import com.example.stocka.PrintCallBackListener
 import com.example.stocka.SalesInfoScreen.SalesItemsDetails
 import com.example.stocka.Viemodel.AuthViewModel
 import com.example.stocka.ui.theme.ListOfColors
 import java.text.SimpleDateFormat
 import java.util.Date
 
+
 @SuppressLint("UnusedMaterialScaffoldPaddingParameter")
 @Composable
-fun GenerateReceiptScreen(navController: NavController, viewModel: AuthViewModel) {
+fun GenerateReceiptScreen(navController: NavController, viewModel: AuthViewModel, printCallBackListener: PrintCallBackListener) {
 
     val user = viewModel.userData.value
     val saleInfo = viewModel.salesSelected.value
@@ -49,6 +41,8 @@ fun GenerateReceiptScreen(navController: NavController, viewModel: AuthViewModel
     val formattedDate = saleInfo?.salesDate?.let {
         SimpleDateFormat("dd MMM yyyy").format(Date(it))
     } ?: ""
+
+    val formattedTotalAmount = formatNumberWithDelimiter(saleInfo?.totalPrice!!.toDouble())
 
     Column(
         modifier = Modifier.fillMaxSize()
@@ -228,6 +222,8 @@ fun GenerateReceiptScreen(navController: NavController, viewModel: AuthViewModel
                 )
             }
 
+            Spacer(modifier = Modifier.padding(5.dp))
+
             LazyColumn(
                 modifier = Modifier.wrapContentHeight(),
                 verticalArrangement = Arrangement.spacedBy(7.dp)
@@ -235,111 +231,74 @@ fun GenerateReceiptScreen(navController: NavController, viewModel: AuthViewModel
                 items(saleInfo?.sales.orEmpty()) { singleSale ->
                     SalesItemsDetails(sales = singleSale, viewModel) {}
                 }
-            }
 
-            Spacer(modifier = Modifier.padding(10.dp))
+                item {
 
-            Column(
-                modifier = Modifier
-                    .verticalScroll(rememberScrollState()),
-            ) {
+                    Spacer(modifier = Modifier.padding(10.dp))
 
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(45.dp)
-                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(45.dp)
+                    ) {
 
-                    Text(
-                        text = "Total Quantity",
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.align(Alignment.TopStart)
-                    )
+                        Text(
+                            text = "Total Quantity",
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.align(Alignment.TopStart)
+                        )
 
-                    Text(
-                        text = "Total Amount",
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.align(Alignment.TopEnd)
-                    )
+                        Text(
+                            text = "Total Amount",
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.align(Alignment.TopEnd)
+                        )
 
-                    Text(
-                        text = saleInfo!!.totalQuantity.toString(),
-                        modifier = Modifier.align(Alignment.BottomStart)
-                    )
+                        Text(
+                            text = saleInfo!!.totalQuantity.toString(),
+                            modifier = Modifier.align(Alignment.BottomStart)
+                        )
 
-                    Text(
-                        text = saleInfo.totalPrice.toString(),
-                        modifier = Modifier.align(Alignment.BottomEnd)
-                    )
+                        Text(
+                            text = formattedTotalAmount,
+                            modifier = Modifier.align(Alignment.BottomEnd)
+                        )
+
+                    }
+
+                    Spacer(modifier = Modifier.padding(20.dp))
+
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Button(
+                            onClick = {
+
+                                printCallBackListener.onPrintButtonClick()
+                            },
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier
+                                .fillMaxWidth(0.7f)
+                                .height(50.dp),
+                            colors = ButtonDefaults.buttonColors(ListOfColors.orange)
+                        ) {
+
+                            Text(
+                                text = "Print",
+                                color = ListOfColors.black
+                            )
+                        }
+                    }
 
                 }
-                Spacer(modifier = Modifier.padding(20.dp))
-
-                Button(
-                    onClick = {},
-                    shape = RoundedCornerShape(10.dp),
-                    modifier = Modifier
-                        .fillMaxWidth(0.7f)
-                        .height(50.dp)
-                        .align(Alignment.CenterHorizontally),
-                    colors = ButtonDefaults.buttonColors(ListOfColors.orange)
-                ) {
-
-                    Text(
-                        text = "Print",
-                        color = ListOfColors.black
-                    )
-                }
-
             }
+
+
         }
     }
 }
 
-
-private fun ComponentActivity.printDocument() {
-    val printManager = getSystemService(Context.PRINT_SERVICE) as PrintManager
-
-    val printAdapter = object : PrintDocumentAdapter() {
-        override fun onLayout(
-            oldAttributes: PrintAttributes?,
-            newAttributes: PrintAttributes,
-            cancellationSignal: CancellationSignal?,
-            callback: LayoutResultCallback,
-            extras: Bundle?
-        ) {
-            // Respond to onLayout callback
-            // You may need to calculate the print layout based on your composable content
-        }
-
-        override fun onWrite(
-            pages: Array<out PageRange>?,
-            destination: ParcelFileDescriptor?,
-            cancellationSignal: CancellationSignal?,
-            callback: WriteResultCallback
-        ) {
-
-
-        }
-
-        override fun onFinish() {
-            // Respond to onFinish callback
-            // Clean up any resources if needed
-        }
-    }
-
-    val printJob = printManager.print(
-        "Generate Receipt",
-        printAdapter,
-        PrintAttributes.Builder()
-            .setMediaSize(PrintAttributes.MediaSize.ISO_A4)
-            .setColorMode(PrintAttributes.COLOR_MODE_MONOCHROME)
-            .setMinMargins(PrintAttributes.Margins.NO_MARGINS)
-            .build()
-    )
-
-
-}
 
 
 

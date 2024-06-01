@@ -212,7 +212,11 @@ fun EditExpenseScreen(navController: NavController, viewModel: AuthViewModel){
                         (expense.expenseAmount!!.toDouble() - unmodifiedExpense!!.expenseAmount!!.toDouble()).toString()
                     ) {
                         viewModel.getExpense(expense)
-                        navController.navigate(Destination.ExpenseInfo.routes)
+                        navController.navigate(Destination.ExpenseInfo.routes){
+                            popUpTo(Destination.ExpenseInfo.routes){
+                                inclusive = true
+                            }
+                        }
                     }
                 }
             },

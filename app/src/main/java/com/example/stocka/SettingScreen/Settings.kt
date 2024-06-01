@@ -229,7 +229,10 @@ fun SettingsScreen(navController:NavController,viewModel: AuthViewModel){
                     Spacer(modifier = Modifier.padding(5.dp))
 
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth()
+                            .clickable {
+                                       viewModel.pay()
+                            },
                         verticalAlignment = Alignment.CenterVertically
                     ) {
 
@@ -470,7 +473,11 @@ fun SettingsScreen(navController:NavController,viewModel: AuthViewModel){
                             .fillMaxWidth()
                             .clickable {
                                 viewModel.logOut() {
-                                    navController.navigate(Destination.Login.routes)
+                                    navController.navigate(Destination.Login.routes){
+                                        popUpTo(Destination.Home.routes){
+                                            inclusive = true
+                                        }
+                                    }
                                 }
                             },
                         verticalAlignment = Alignment.CenterVertically

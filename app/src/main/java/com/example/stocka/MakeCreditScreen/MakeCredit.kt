@@ -7,12 +7,15 @@ import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBackIos
+import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -30,6 +33,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import com.example.stocka.HomeScreen.formatNumberWithDelimiter
 import com.example.stocka.Navigation.Destination
 import com.example.stocka.Viemodel.AuthViewModel
 import com.example.stocka.data.SingleSale
@@ -70,9 +74,15 @@ fun MakeCreditScreen(navController: NavController, viewModel: AuthViewModel){
         mutableStateOf<List<MakeSale>>(emptyList())
     }
 
+    var isDropdownVisible by rememberSaveable { mutableStateOf(false) }
+
 
     var stockToUpdate by rememberSaveable {
         mutableStateOf<MutableList<Pair<Stock, Int>>>(mutableListOf())
+    }
+
+    var editStockClickable by rememberSaveable {
+        mutableStateOf(true)
     }
 
     var productName by rememberSaveable {
@@ -91,6 +101,9 @@ fun MakeCreditScreen(navController: NavController, viewModel: AuthViewModel){
         mutableStateOf("")
     }
 
+    var customerBalance = customer?.customerBalance!!.toDoubleOrNull() ?: 0.0
+    var formattedCustomerBalance = formatNumberWithDelimiter(customerBalance!!)
+
     var quantity by rememberSaveable {
         mutableStateOf("1")
     }
@@ -98,6 +111,7 @@ fun MakeCreditScreen(navController: NavController, viewModel: AuthViewModel){
         productName = stockSelected.stockName.toString()
         productCost = stockSelected.stockSellingPrice.toString()
         totalCost = stockSelected.stockTotalPrice.toString()
+        editStockClickable = false
         exist = true
     }
 
@@ -199,7 +213,7 @@ fun MakeCreditScreen(navController: NavController, viewModel: AuthViewModel){
                         modifier = Modifier.align(Alignment.BottomStart)
                     )
                     Text(
-                        text = customer?.customerBalance.toString(),
+                        text = formattedCustomerBalance,
                         modifier = Modifier.align(Alignment.BottomEnd)
                     )
                 }
@@ -217,6 +231,7 @@ fun MakeCreditScreen(navController: NavController, viewModel: AuthViewModel){
                         onValueChange = {
                             viewModel.stockSelected.value = Stock()
                             viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockName = it)
+                            isDropdownVisible = it.isNotEmpty()
                         },
                         label = {
                             Text(
@@ -224,8 +239,10 @@ fun MakeCreditScreen(navController: NavController, viewModel: AuthViewModel){
                             )
                         },
                         modifier = Modifier.align(Alignment.Center),
+                        enabled = editStockClickable
 
                     )
+
 
                     Icon(
                         imageVector = Icons.Default.Add,
@@ -245,6 +262,53 @@ fun MakeCreditScreen(navController: NavController, viewModel: AuthViewModel){
                                 }
                             }
                     )
+
+                    if(!editStockClickable) {
+                        Icon(
+                            imageVector = Icons.Default.Cancel,
+                            contentDescription = "cancelIcon",
+                            modifier = Modifier
+                                .align(Alignment.CenterStart)
+                                .clickable {
+                                    viewModel.stockSelected.value = null
+                                    productName = ""
+                                    productCost = ""
+                                    totalCost = ""
+                                    editStockClickable = true
+                                }
+                        )
+                    }
+                }
+
+                if (isDropdownVisible && stocks.isNotEmpty() && viewModel.stockSelected.value?.stockName?.isNotEmpty() == true) {
+
+                    LazyColumn(
+                        modifier = Modifier
+                            .background(Color.White)
+                            .wrapContentWidth(Alignment.CenterHorizontally),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        items(
+                            items = stocks.filter {
+                                it.stockName.contains(viewModel.stockSelected.value!!.stockName, ignoreCase = true)
+                            }.take(3)
+                        ) { stock ->
+                            DropdownMenuItem(onClick = {
+                                // Handle item selection
+                                viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockName = stock.stockName)
+                                viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockId = stock.stockId)
+                                viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockPurchasePrice = stock.stockPurchasePrice)
+                                viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockSellingPrice = stock.stockSellingPrice)
+                                viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockFixedSellingPrice = stock.stockFixedSellingPrice)
+                                viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockTotalPrice = stock.stockTotalPrice)
+                                viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockQuantity = stock.stockQuantity)
+                                viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockQuantitySold = stock.stockQuantitySold)
+                                isDropdownVisible = false
+                            }) {
+                                Text(text = stock.stockName)
+                            }
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.padding(10.dp))
@@ -293,8 +357,8 @@ fun MakeCreditScreen(navController: NavController, viewModel: AuthViewModel){
                         contentDescription = "removeIcon",
                         modifier = Modifier.clickable {
                             if (!isLoading || !isLoadingStock) {
-                                if (quantity.toInt() > 0) {
-                                    if (viewModel.stockSelected.value != null) {
+                                if (quantity.isNotEmpty() && quantity.toInt() > 0) {
+                                    if (viewModel.stockSelected.value != null && quantity.isNotEmpty()) {
                                         var temp = quantity.toInt()
                                         temp--
                                         quantity = temp.toString()
@@ -303,6 +367,9 @@ fun MakeCreditScreen(navController: NavController, viewModel: AuthViewModel){
                                     else{
                                         Toast.makeText(context,"Select a stock to decrease quantity",Toast.LENGTH_LONG).show()
                                     }
+                                }
+                                else{
+                                    Toast.makeText(context,"Add quantity to make sale",Toast.LENGTH_LONG).show()
                                 }
                             }
                         }
@@ -317,11 +384,11 @@ fun MakeCreditScreen(navController: NavController, viewModel: AuthViewModel){
                             if (viewModel.stockSelected.value != null) {
                                 if (it.isNotEmpty()) {
                                     val newValue = it.toInt()
-                                    quantity = if (newValue >= 0) newValue.toString() else "1"
+                                    quantity = if (newValue >= 0) newValue.toString() else ""
                                     viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockTotalPrice = updateTotalCost(viewModel.stockSelected.value!!.stockSellingPrice!!.toFloat(), quantity.toInt()))
                                 } else {
-                                    quantity = "1"
-                                    viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockTotalPrice = updateTotalCost(viewModel.stockSelected.value!!.stockSellingPrice!!.toFloat(), 1))
+                                    quantity = ""
+                                    viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockTotalPrice = updateTotalCost(viewModel.stockSelected.value!!.stockSellingPrice!!.toFloat(), 0))
                                 }
                             }
                             else{
@@ -329,6 +396,11 @@ fun MakeCreditScreen(navController: NavController, viewModel: AuthViewModel){
                             }
                         },
                         textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center),
+                        label = {
+                            Text(
+                                text = " Quantity"
+                            )
+                        },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         enabled = !isLoading || !isLoadingStock
                     )
@@ -338,14 +410,19 @@ fun MakeCreditScreen(navController: NavController, viewModel: AuthViewModel){
                         contentDescription = "addIcon",
                         modifier = Modifier.clickable {
                             if (!isLoading || !isLoadingStock) {
-                                if (viewModel.stockSelected.value!= null) {
-                                    var temp = quantity.toInt()
-                                    temp++
-                                    quantity = temp.toString()
-                                    viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockTotalPrice = updateTotalCost(viewModel.stockSelected.value!!.stockSellingPrice!!.toFloat(), quantity.toInt()))
+                                if (quantity.isNotEmpty() && quantity.toInt() >= 0) {
+                                    if (viewModel.stockSelected.value != null && quantity.isNotEmpty()) {
+                                        var temp = quantity.toInt()
+                                        temp++
+                                        quantity = temp.toString()
+                                        viewModel.stockSelected.value = viewModel.stockSelected.value!!.copy(stockTotalPrice = updateTotalCost(viewModel.stockSelected.value!!.stockSellingPrice!!.toFloat(), quantity.toInt()))
+                                    }
+                                    else {
+                                        Toast.makeText(context, "Select a stock to increase quantity", Toast.LENGTH_LONG).show()
+                                    }
                                 }
                                 else{
-                                    Toast.makeText(context,"Select a stock to increase quantity",Toast.LENGTH_LONG).show()
+                                    Toast.makeText(context,"Add quantity to make sale",Toast.LENGTH_LONG).show()
                                 }
                             }
                         }
@@ -376,7 +453,7 @@ fun MakeCreditScreen(navController: NavController, viewModel: AuthViewModel){
                     onClick = {
 
                         focus.clearFocus(force = true)
-
+                        editStockClickable = true
                         if (!isLoading || !isLoadingStock) {
                             if (stockToUpdate.any { it.first.stockName == productName }) {
                                 val existingStock =
@@ -395,6 +472,17 @@ fun MakeCreditScreen(navController: NavController, viewModel: AuthViewModel){
                                         return@Button
                                     }
                                 }
+                            }
+
+
+                            if (quantity.isEmpty() || quantity.toInt() == 0) {
+                                // Show a toast message indicating that the count is not an integer
+                                Toast.makeText(
+                                    context,
+                                    "stock quantity can't be zero or null",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                                return@Button
                             }
 
                             if (!quantity.isInt()) {
@@ -518,6 +606,16 @@ fun MakeCreditScreen(navController: NavController, viewModel: AuthViewModel){
                                 }
                             }
 
+
+                            if (quantity.isEmpty() || quantity.toInt() == 0) {
+                                // Show a toast message indicating that the count is not an integer
+                                Toast.makeText(
+                                    context,
+                                    "stock quantity can't be zero or null",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                                return@Button
+                            }
 
                             if (!quantity.isInt()) {
                                 // Show a toast message indicating that the count is not an integer

@@ -32,7 +32,6 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.stocka.Navigation.Destination
 import com.example.stocka.Viemodel.AuthViewModel
-import com.example.stocka.main.navigateTo
 import com.example.stocka.ui.theme.ListOfColors
 import com.vanpra.composematerialdialogs.MaterialDialog
 import com.vanpra.composematerialdialogs.datetime.date.datepicker
@@ -260,12 +259,12 @@ fun AddStockScreen(navController: NavController,viewModel: AuthViewModel) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(70.dp),
+                        .height(80.dp),
                     horizontalArrangement = Arrangement.SpaceAround,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Quantity",
+                        text = "Add Stock",
                     )
 
                     Icon(
@@ -347,8 +346,11 @@ fun AddStockScreen(navController: NavController,viewModel: AuthViewModel) {
                                 twoWeeksToExpiry.toString(),
                                 oneWeekToExpiry.toString()
                             ) {
-
-                                navigateTo(navController, Destination.Stocks)
+                                navController.navigate(Destination.StockInfo.routes){
+                                    popUpTo(Destination.AddStock.routes){
+                                        inclusive = true
+                                    }
+                                }
                             }
                         }
                     },

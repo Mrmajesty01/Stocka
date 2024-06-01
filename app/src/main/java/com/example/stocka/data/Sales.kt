@@ -14,7 +14,7 @@ data class Sales(
     var sales:List<SingleSale>?= listOf(),
     var totalPrice:String? = null,
     var totalProfit:String? = null,
-    val amountPaid:String?=null,
+    var amountPaid:String?=null,
     var balance:String?=null,
     var totalQuantity:String?=null,
 ):Parcelable {

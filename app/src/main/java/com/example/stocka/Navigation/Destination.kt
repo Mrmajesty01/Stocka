@@ -44,5 +44,8 @@ sealed class Destination(val routes:String){
     object DailyReport: Destination("dailyReport")
     object EditExpense:Destination("editExpense")
     object AddToStock:Destination("addtoStock")
+    object CheckOutPayment:Destination("checkOutPayment")
+    object ForgotPassword:Destination("forgotPassword")
+    object FeaturesToPassword:Destination("featuresToPassword")
 
 }

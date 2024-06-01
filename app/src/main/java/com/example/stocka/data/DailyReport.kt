@@ -10,5 +10,6 @@ data class DailyReport(
     val totalExpensesToday:String? = null,
     val profitAfterExpense:String? = null,
     val mostSoldGood:String? = null,
-    val mostSoldGoodQty:String? = null
+    val mostSoldGoodQty:String? = null,
+    var goodsSold:String? = null,
 )

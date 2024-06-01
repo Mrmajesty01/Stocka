@@ -12,12 +12,18 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.Button
+import androidx.compose.material.ButtonDefaults
+import androidx.compose.material.DropdownMenu
+import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.Text
@@ -26,6 +32,7 @@ import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIos
 import androidx.compose.material.icons.filled.Cancel
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -48,6 +55,7 @@ import androidx.navigation.NavController
 import com.example.stocka.HomeScreen.CustomerSalesItem
 import com.example.stocka.Navigation.Destination
 import com.example.stocka.Viemodel.AuthViewModel
+import com.example.stocka.main.CommonProgressSpinner
 import com.example.stocka.main.navigateTo
 import com.example.stocka.ui.theme.ListOfColors
 
@@ -58,6 +66,8 @@ fun InvoiceScreen(navController:NavController,viewModel: AuthViewModel){
 
 
     val focus = LocalFocusManager.current
+    var expanded by remember { mutableStateOf(false) }
+    var selectedItem by remember { mutableStateOf("") }
     val searchInvoiceLoading = viewModel.invoiceSearchProgress.value
     val searchedInvoice = viewModel.invoiceData.value
     val invoices = viewModel.invoiceData.value
@@ -66,6 +76,85 @@ fun InvoiceScreen(navController:NavController,viewModel: AuthViewModel){
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
+
+        Box(
+            modifier = Modifier.wrapContentHeight(),
+            contentAlignment = Alignment.TopCenter // Aligning content to the top end
+        ) {
+
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+                modifier = Modifier.width(250.dp)
+            ) {
+                Column {
+                    Text(
+                        text = "Search by:",
+                        modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 4.dp),
+                        fontWeight = FontWeight.Bold
+                    )
+                    DropdownMenuItem(onClick = {
+                        selectedItem = "Invoice Number"
+                    }) {
+                        Text(
+                            "Invoice Number",
+                            fontWeight = if (selectedItem == "Invoice Number") FontWeight.Bold else null
+                        )
+                    }
+
+                    DropdownMenuItem(onClick = {
+                        selectedItem = "Customer Name"
+                    }) {
+                        Text(
+                            "Customer Name",
+                            fontWeight = if (selectedItem == "Customer Name") FontWeight.Bold else null
+                        )
+                    }
+
+                    DropdownMenuItem(onClick = {
+                        selectedItem = "Total Amount"
+                    }) {
+                        Text(
+                            "Total Amount",
+                            fontWeight = if (selectedItem == "Total Amount") FontWeight.Bold else null
+                        )
+                    }
+
+
+                    androidx.compose.material.Divider()
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Button(
+                            onClick = {
+                                expanded = false
+                                selectedItem = ""
+                                viewModel.retrieveInvoices()
+                            },
+                            modifier = Modifier.wrapContentHeight()
+                                .wrapContentWidth(),
+                            colors = ButtonDefaults.buttonColors(backgroundColor = ListOfColors.lightRed)
+                        ) {
+                            Text("Cancel")
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Button(
+                            onClick = {
+                                expanded = false
+                            },
+                            modifier = Modifier.wrapContentHeight()
+                                .wrapContentWidth(),
+                            colors = ButtonDefaults.buttonColors(backgroundColor = ListOfColors.orange)
+                        ) {
+                            Text("Apply")
+                        }
+                    }
+                }
+            }
+        }
+
         Column(modifier = Modifier.fillMaxSize()) {
 
             Row(
@@ -110,62 +199,100 @@ fun InvoiceScreen(navController:NavController,viewModel: AuthViewModel){
                     )
             ) {
 
-                TextField(
-                    value = searchValue,
-                    onValueChange = {
-                        searchValue = it
-                        viewModel.invoiceSearchWhenTyping(searchValue)
-                    },
-                    label = {
-                        Text(text = "Search for invoice")
-                    },
-                    modifier = Modifier
-                        .padding(8.dp)
-                        .fillMaxWidth()
-                        .border(1.dp, Color.LightGray, CircleShape),
-                    shape = CircleShape,
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Text,
-                        imeAction = ImeAction.Search
-                    ),
-                    keyboardActions = KeyboardActions(
-                        onSearch = {
-                            viewModel.invoiceSearch(searchValue)
-                            focus.clearFocus()
-                        }
-                    ),
-                    maxLines = 1,
-                    singleLine = true,
-                    colors = TextFieldDefaults.textFieldColors(
-                        backgroundColor = Color.Transparent,
-                        textColor = Color.Black,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        disabledIndicatorColor = Color.Transparent
-                    ),
-                    leadingIcon = {
-                        IconButton(onClick = {
-                            searchValue = ""
-                            viewModel.retrieveInvoices()
-                            focus.clearFocus()
-                        }) {
-                            if (searchValue.isEmpty()) {
 
-                            } else {
-                                Icon(imageVector = Icons.Filled.Cancel, contentDescription = null)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.End
+                ) {
+
+                    TextField(
+                        value = searchValue,
+                        onValueChange = {
+                            searchValue = it
+                            if (selectedItem.isNotBlank()) {
+
+                                when (selectedItem) {
+                                    "Invoice Number" -> viewModel.invoiceSearchByInvoiceNumberWhenTyping(searchValue)
+                                    "Customer Name" -> viewModel.invoiceSearchByCustomerNameWhenTyping(searchValue)
+                                    "Total Amount" -> viewModel.invoiceSearchByTotalAmountWhenTyping(searchValue)
+                                }
+                            }
+                        },
+                        label = {
+                            Text(text = "Search for invoice")
+                        },
+                        modifier = Modifier
+                            .padding(8.dp)
+                            .border(1.dp, Color.LightGray, CircleShape),
+                        shape = CircleShape,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Text,
+                            imeAction = ImeAction.Search
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onSearch = {
+                                if (selectedItem.isNotBlank()) {
+
+                                    when (selectedItem) {
+                                        "Invoice Number" -> viewModel.invoiceSearchByInvoiceNumber(searchValue)
+                                        "Customer Name" -> viewModel.invoiceSearchByCustomerName(searchValue)
+                                        "Total Amount" -> viewModel.invoiceSearchByTotalAmount(searchValue)
+                                    }
+                                }
+                                focus.clearFocus()
+                            }
+                        ),
+                        maxLines = 1,
+                        singleLine = true,
+                        colors = TextFieldDefaults.textFieldColors(
+                            backgroundColor = Color.Transparent,
+                            textColor = Color.Black,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent,
+                            disabledIndicatorColor = Color.Transparent
+                        ),
+                        leadingIcon = {
+                            IconButton(onClick = {
+                                searchValue = ""
+                                viewModel.retrieveInvoices()
+                                focus.clearFocus()
+                            }) {
+                                if (searchValue.isEmpty()) {
+
+                                } else {
+                                    Icon(
+                                        imageVector = Icons.Filled.Cancel,
+                                        contentDescription = null
+                                    )
+                                }
+                            }
+                        },
+                        trailingIcon = {
+                            IconButton(onClick = {
+                                if (selectedItem.isNotBlank()) {
+
+                                    when (selectedItem) {
+                                        "Invoice Number" -> viewModel.invoiceSearchByInvoiceNumber(searchValue)
+                                        "Customer Name" -> viewModel.invoiceSearchByCustomerName(searchValue)
+                                        "Total Amount" -> viewModel.invoiceSearchByTotalAmount(searchValue)
+                                    }
+                                }
+                                focus.clearFocus()
+                            }) {
+                                Icon(imageVector = Icons.Filled.Search, contentDescription = null)
                             }
                         }
-                    },
-                    trailingIcon = {
-                        IconButton(onClick = {
-                            viewModel.invoiceSearch(searchValue)
-                            focus.clearFocus()
-                        }) {
-                            Icon(imageVector = Icons.Filled.Search , contentDescription = null )
-                        }
-                    }
 
-                )
+                    )
+
+                    IconButton(
+                        onClick = { expanded = true },
+                        modifier = Modifier.size(48.dp)
+                    ) {
+                        Icon(imageVector = Icons.Default.FilterList, contentDescription = "filterIcon")
+                    }
+                }
 
                 Spacer(modifier = Modifier.padding(5.dp))
 
@@ -238,6 +365,10 @@ fun InvoiceScreen(navController:NavController,viewModel: AuthViewModel){
                 }
 
             }
+        }
+
+        if (searchInvoiceLoading) {
+            CommonProgressSpinner()
         }
     }
 }

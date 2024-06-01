@@ -12,13 +12,21 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.Button
+import androidx.compose.material.ButtonDefaults
+import androidx.compose.material.Divider
+import androidx.compose.material.DropdownMenu
+import androidx.compose.material.DropdownMenuItem
 import androidx.compose.material.Icon
 import androidx.compose.material.IconButton
 import androidx.compose.material.Text
@@ -26,6 +34,7 @@ import androidx.compose.material.TextField
 import androidx.compose.material.TextFieldDefaults
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cancel
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
@@ -49,6 +58,7 @@ import com.example.stocka.Navigation.Destination
 import com.example.stocka.Viemodel.AuthViewModel
 import com.example.stocka.main.CommonProgressSpinner
 import com.example.stocka.main.navigateTo
+import com.example.stocka.ui.theme.ListOfColors
 
 
 @SuppressLint("UnusedMaterialScaffoldPaddingParameter")
@@ -71,6 +81,8 @@ fun CustomersScreen(navController:NavController,viewModel: AuthViewModel){
         mutableStateOf(true)
     }
 
+    val features = viewModel.featuresToPin.value
+
     var searchValue by remember {
         mutableStateOf("")
     }
@@ -82,8 +94,98 @@ fun CustomersScreen(navController:NavController,viewModel: AuthViewModel){
         mutableStateOf(false)
     }
 
+    var totalAmountOwingHidden by remember {
+        mutableStateOf(true)
+    }
+
+    LaunchedEffect(features){
+        totalAmountOwingHidden = viewModel.featuresToPin.value.TotalAmountOwingCustomers
+    }
+
+    var expanded by remember { mutableStateOf(false) }
+    var filterAppliedHighestBalance by remember { mutableStateOf(false) }
+    var filterAppliedLowestBalance by remember { mutableStateOf(false) }
+    var selectedItem by remember { mutableStateOf("") }
+
 
     Box(modifier = Modifier.fillMaxSize()){
+
+        Box(
+            modifier = Modifier.wrapContentHeight(),
+            contentAlignment = Alignment.TopCenter // Aligning content to the top end
+        ) {
+
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false },
+                modifier = Modifier.width(250.dp)
+            ) {
+                Column {
+                    Text(
+                        text = "Filter by:",
+                        modifier = Modifier.padding(start = 16.dp, top = 8.dp, bottom = 4.dp),
+                        fontWeight = FontWeight.Bold
+                    )
+                    DropdownMenuItem(onClick = {
+                        selectedItem = "Highest Balance"
+                    }) {
+                        Text(
+                            "Highest Balance",
+                            fontWeight = if (selectedItem == "Highest Balance") FontWeight.Bold else null
+                        )
+                    }
+
+                    DropdownMenuItem(onClick = {
+                        selectedItem = "Lowest Balance"
+                    }) {
+                        Text(
+                            "Lowest Balance",
+                            fontWeight = if (selectedItem == "Lowest Balance") FontWeight.Bold else null
+                        )
+                    }
+
+                    Divider()
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Button(
+                            onClick = {
+                                expanded = false
+                                selectedItem = ""
+                                viewModel.retrieveCustomer()
+                            },
+                            modifier = Modifier.wrapContentHeight()
+                                .wrapContentWidth(),
+                            colors = ButtonDefaults.buttonColors(backgroundColor = ListOfColors.lightRed)
+                        ) {
+                            Text("Cancel")
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Button(
+                            onClick = {
+                                expanded = false
+                                if (selectedItem.isNotBlank()) {
+
+                                    when (selectedItem) {
+                                        "Highest Balance" -> viewModel.retrieveCustomerWithHighestBalance()
+                                        "Lowest Balance" -> viewModel.retrieveCustomerWithLowestBalance()
+                                    }
+                                }
+                            },
+                            modifier = Modifier.wrapContentHeight()
+                                .wrapContentWidth(),
+                            colors = ButtonDefaults.buttonColors(backgroundColor = ListOfColors.orange)
+                        ) {
+                            Text("Apply")
+                        }
+                    }
+                }
+            }
+        }
+
+
         Column(
             modifier = Modifier.fillMaxSize()
         ) {
@@ -103,13 +205,10 @@ fun CustomersScreen(navController:NavController,viewModel: AuthViewModel){
                 )
             }
 
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(
-                        start = 20.dp,
-                        end = 20.dp
-                    )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.End
             ) {
 
                 TextField(
@@ -123,7 +222,6 @@ fun CustomersScreen(navController:NavController,viewModel: AuthViewModel){
                     },
                     modifier = Modifier
                         .padding(8.dp)
-                        .fillMaxWidth()
                         .border(1.dp, Color.LightGray, CircleShape)
                         .onFocusChanged {focusState: FocusState ->
                             searching = focusState.isFocused
@@ -175,11 +273,29 @@ fun CustomersScreen(navController:NavController,viewModel: AuthViewModel){
                         }
                     }
 
-
                 )
 
+                IconButton(
+                    onClick = { expanded = true },
+                    modifier = Modifier.size(48.dp)
+                ) {
+                    Icon(imageVector = Icons.Default.FilterList, contentDescription = "filterIcon")
+                }
+
+            }
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(
+                        start = 20.dp,
+                        end = 20.dp
+                    )
+            ) {
+
+
                 Spacer(modifier = Modifier.padding(5.dp))
-                TotalAmountOwing(totalAmountOwingCustomers)
+                TotalAmountOwing(totalAmountOwingCustomers, viewModel)
                 Spacer(modifier = Modifier.padding(5.dp))
 
                 Box(
